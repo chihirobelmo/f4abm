@@ -65,6 +65,32 @@ object Main extends App {
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0)
     GL30.glBindVertexArray(0)
 
+    // 頂点シェーダーコード
+    val vertexShaderSource =
+    """
+    #version 330 core
+    layout(location = 0) in vec3 aPos;
+    void main() {
+        gl_Position = vec4(aPos, 1.0);
+    }
+    """
+
+    // フラグメントシェーダーコード
+    val fragmentShaderSource =
+    """
+    #version 330 core
+    out vec4 FragColor;
+    void main() {
+        FragColor = vec4(1.0, 0.5, 0.2, 1.0);
+    }
+    """
+
+    // シェーダープログラムの作成
+    val vertexShader = compileShader(vertexShaderSource, GL20.GL_VERTEX_SHADER)
+    val fragmentShader = compileShader(fragmentShaderSource, GL20.GL_FRAGMENT_SHADER)
+
+    val shaderProgram = GL20.glCreateProgram()
+
     // ループ
     while (!GLFW.glfwWindowShouldClose(window)) {
         // 背景色を設定
@@ -96,31 +122,6 @@ object Main extends App {
             println(s"マウス位置が変更されました: ($xpos, $ypos)")
         })
 
-        // 頂点シェーダーコード
-        val vertexShaderSource =
-        """
-        #version 330 core
-        layout(location = 0) in vec3 aPos;
-        void main() {
-            gl_Position = vec4(aPos, 1.0);
-        }
-        """
-
-        // フラグメントシェーダーコード
-        val fragmentShaderSource =
-        """
-        #version 330 core
-        out vec4 FragColor;
-        void main() {
-            FragColor = vec4(1.0, 0.5, 0.2, 1.0);
-        }
-        """
-
-        // シェーダープログラムの作成
-        val vertexShader = compileShader(vertexShaderSource, GL20.GL_VERTEX_SHADER)
-        val fragmentShader = compileShader(fragmentShaderSource, GL20.GL_FRAGMENT_SHADER)
-
-        val shaderProgram = GL20.glCreateProgram()
         GL20.glAttachShader(shaderProgram, vertexShader)
         GL20.glAttachShader(shaderProgram, fragmentShader)
         GL20.glLinkProgram(shaderProgram)
