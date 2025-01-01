@@ -15,7 +15,7 @@ object Main extends App {
   GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE)
 
   // ウィンドウ作成
-  val window = GLFW.glfwCreateWindow(800, 600, "Scala LWJGL Window", MemoryUtil.NULL, MemoryUtil.NULL)
+  val window = GLFW.glfwCreateWindow(800, 600, "Scala LWJGL Input Example", MemoryUtil.NULL, MemoryUtil.NULL)
   if (window == MemoryUtil.NULL) {
     throw new RuntimeException("ウィンドウの作成に失敗しました")
   }
@@ -32,6 +32,31 @@ object Main extends App {
     // 背景色を設定
     GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
     GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
+
+    GLFW.glfwSetKeyCallback(window, (window, key, scancode, action, mods) => {
+        action match {
+            case GLFW.GLFW_PRESS => {
+                println(s"キー $key が押されました")
+                if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_ESCAPE) == GLFW.GLFW_PRESS) {
+                    GLFW.glfwSetWindowShouldClose(window, true)
+                }
+            }
+            case GLFW.GLFW_RELEASE => println(s"キー $key が離されました")
+            case _ =>
+        }
+    })
+
+    GLFW.glfwSetMouseButtonCallback(window, (window, button, action, mods) => {
+        action match {
+            case GLFW.GLFW_PRESS => println(s"マウスボタン $button が押されました")
+            case GLFW.GLFW_RELEASE => println(s"マウスボタン $button が離されました")
+            case _ =>
+        }
+    })
+
+    GLFW.glfwSetCursorPosCallback(window, (window, xpos, ypos) => {
+        println(s"マウス位置が変更されました: ($xpos, $ypos)")
+    })
 
     // バッファのスワップ
     GLFW.glfwSwapBuffers(window)
