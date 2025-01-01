@@ -5,6 +5,8 @@ import org.lwjgl.system.MemoryUtil
 
 object Main extends App {
 
+    windowLife()
+
     // シェーダーのコンパイル
     def compileShader(source: String, shaderType: Int): Int = {
         val shader = GL20.glCreateShader(shaderType)
@@ -45,7 +47,7 @@ object Main extends App {
         vboId
     }
     
-    def windowLife(gameLoop: (Long, Int, Int, Int, Int) => Unit) {
+    def windowLife() {
         // 初期化
         if (!GLFW.glfwInit()) {
             throw new IllegalStateException("GLFWの初期化に失敗しました")
@@ -171,7 +173,7 @@ object Main extends App {
         GLFW.glfwSwapBuffers(window)
     }
 
-    def gameLoop (window: Long, shaderProgram: Int, vertexShader: Int, fragmentShader: Int, vaoId: Int) {
+    def gameLoop(window: Long, shaderProgram: Int, vertexShader: Int, fragmentShader: Int, vaoId: Int) {
 
         keyboardAndMouse(window)
         render(window, shaderProgram, vertexShader, fragmentShader, vaoId)
@@ -179,6 +181,4 @@ object Main extends App {
         // イベントの処理
         GLFW.glfwPollEvents()
     }
-
-    windowLife(gameLoop)
 }
