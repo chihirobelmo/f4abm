@@ -3,24 +3,38 @@ import org.lwjgl.glfw._
 import org.lwjgl.opengl._
 import org.lwjgl.system.MemoryUtil
 
-object Main extends App {
+class Primitive(vertices: Array[Float]) {
+    
+    val vaoId = createVao()
+    val vboId = createVbo(vertices)
 
-    windowLife()
-
-    // シェーダーのコンパイル
-    def compileShader(source: String, shaderType: Int): Int = {
-        val shader = GL20.glCreateShader(shaderType)
-        GL20.glShaderSource(shader, source)
-        GL20.glCompileShader(shader)
-
-        // コンパイルエラーの確認
-        if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
-            throw new RuntimeException(s"シェーダーのコンパイルに失敗: ${GL20.glGetShaderInfoLog(shader)}")
-        }
-        shader
+    // 頂点シェーダーコード
+    val vertexShaderSource =
+    """
+    #version 330 core
+    layout(location = 0) in vec3 aPos;
+    void main() {
+        gl_Position = vec4(aPos, 1.0);
     }
+    """
 
-    def createVao(): Int = {
+    // フラグメントシェーダーコード
+    val fragmentShaderSource =
+    """
+    #version 330 core
+    out vec4 FragColor;
+    void main() {
+        FragColor = vec4(1.0, 0.5, 0.2, 1.0);
+    }
+    """
+
+    // シェーダープログラムの作成
+    val vertexShader = compileShader(vertexShaderSource, GL20.GL_VERTEX_SHADER)
+    val fragmentShader = compileShader(fragmentShaderSource, GL20.GL_FRAGMENT_SHADER)
+
+    val shaderProgram = GL20.glCreateProgram()
+
+    private def createVao(): Int = {
 
         // VAO作成
         val vaoId = GL30.glGenVertexArrays()
@@ -29,7 +43,7 @@ object Main extends App {
         vaoId
     }
 
-    def createVbo(vertices: Array[Float]): Int = {
+    private def createVbo(vertices: Array[Float]): Int = {
 
         // VBO作成
         val vboId = GL15.glGenBuffers()
@@ -46,6 +60,44 @@ object Main extends App {
 
         vboId
     }
+
+    private def compileShader(source: String, shaderType: Int): Int = {
+        val shader = GL20.glCreateShader(shaderType)
+        GL20.glShaderSource(shader, source)
+        GL20.glCompileShader(shader)
+
+        // コンパイルエラーの確認
+        if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
+            throw new RuntimeException(s"シェーダーのコンパイルに失敗: ${GL20.glGetShaderInfoLog(shader)}")
+        }
+        shader
+    }
+
+    def render(window: Long) {
+
+        GL20.glAttachShader(shaderProgram, vertexShader)
+        GL20.glAttachShader(shaderProgram, fragmentShader)
+        GL20.glLinkProgram(shaderProgram)
+
+        // シェーダープログラムを使用
+        GL20.glUseProgram(shaderProgram)
+
+        // VAOをバインドして描画
+        GL30.glBindVertexArray(vaoId)
+        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, 3)
+
+        GL30.glBindVertexArray(0)
+    }
+
+    def end() {
+        GL15.glDeleteBuffers(vboId)
+        GL30.glDeleteVertexArrays(vaoId)
+    }
+}
+
+object Main extends App {
+
+    windowLife()
     
     def windowLife() {
         // 初期化
@@ -86,43 +138,15 @@ object Main extends App {
             +0.0f, +0.5f, +0.0f  // 上
         )
         
-        val vaoId = createVao()
-        val vboId = createVbo(vertices)
-
-        // 頂点シェーダーコード
-        val vertexShaderSource =
-        """
-        #version 330 core
-        layout(location = 0) in vec3 aPos;
-        void main() {
-            gl_Position = vec4(aPos, 1.0);
-        }
-        """
-
-        // フラグメントシェーダーコード
-        val fragmentShaderSource =
-        """
-        #version 330 core
-        out vec4 FragColor;
-        void main() {
-            FragColor = vec4(1.0, 0.5, 0.2, 1.0);
-        }
-        """
-
-        // シェーダープログラムの作成
-        val vertexShader = compileShader(vertexShaderSource, GL20.GL_VERTEX_SHADER)
-        val fragmentShader = compileShader(fragmentShaderSource, GL20.GL_FRAGMENT_SHADER)
-
-        val shaderProgram = GL20.glCreateProgram()
+        val primitive = new Primitive(vertices)
 
         // ループ
         while (!GLFW.glfwWindowShouldClose(window)) {
-            gameLoop(window, shaderProgram, vertexShader, fragmentShader, vaoId)
+            gameLoop(window, primitive)
         }
 
         // 終了処理
-        GL15.glDeleteBuffers(vboId)
-        GL30.glDeleteVertexArrays(vaoId)
+        primitive.end()
     }
 
     def keyboardAndMouse(window: Long) {
@@ -152,31 +176,21 @@ object Main extends App {
         })
     }
 
-    def render(window: Long, shaderProgram: Int, vertexShader: Int, fragmentShader: Int, vaoId: Int) {
+    def render(window: Long, primitive: Primitive) {
         // 背景色を設定
         GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
 
-        GL20.glAttachShader(shaderProgram, vertexShader)
-        GL20.glAttachShader(shaderProgram, fragmentShader)
-        GL20.glLinkProgram(shaderProgram)
-
-        // シェーダープログラムを使用
-        GL20.glUseProgram(shaderProgram)
-
-        // VAOをバインドして描画
-        GL30.glBindVertexArray(vaoId)
-        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, 3)
-        GL30.glBindVertexArray(0)
+        primitive.render(window)
 
         // バッファのスワップ
         GLFW.glfwSwapBuffers(window)
     }
 
-    def gameLoop(window: Long, shaderProgram: Int, vertexShader: Int, fragmentShader: Int, vaoId: Int) {
+    def gameLoop(window: Long, primitive: Primitive) {
 
         keyboardAndMouse(window)
-        render(window, shaderProgram, vertexShader, fragmentShader, vaoId)
+        render(window, primitive)
 
         // イベントの処理
         GLFW.glfwPollEvents()
