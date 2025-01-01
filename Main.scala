@@ -41,6 +41,30 @@ object Main extends App {
     // ウィンドウを表示
     GLFW.glfwShowWindow(window)
 
+    // 頂点データ
+    val vertices: Array[Float] = Array(
+        -0.5f, -0.5f, 0.0f, // 左下
+        0.5f, -0.5f, 0.0f, // 右下
+        0.0f,  0.5f, 0.0f  // 上
+    )
+
+    // VAO作成
+    val vaoId = GL30.glGenVertexArrays()
+    GL30.glBindVertexArray(vaoId)
+
+    // VBO作成
+    val vboId = GL15.glGenBuffers()
+    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vboId)
+    GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertices, GL15.GL_STATIC_DRAW)
+
+    // 頂点属性の設定
+    GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 3 * 4, 0)
+    GL20.glEnableVertexAttribArray(0)
+
+    // バインド解除
+    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0)
+    GL30.glBindVertexArray(0)
+
     // ループ
     while (!GLFW.glfwWindowShouldClose(window)) {
         // 背景色を設定
@@ -104,17 +128,10 @@ object Main extends App {
         // シェーダープログラムを使用
         GL20.glUseProgram(shaderProgram)
 
-        // 描画処理（ここに追加します）
-        GL11.glBegin(GL11.GL_QUADS)
-        GL11.glColor3f(1.0f, 0.0f, 0.0f)
-        GL11.glVertex2f(-0.5f, -0.5f)
-        GL11.glColor3f(0.0f, 1.0f, 0.0f)
-        GL11.glVertex2f(0.5f, -0.5f)
-        GL11.glColor3f(0.0f, 0.0f, 1.0f)
-        GL11.glVertex2f(0.5f, 0.5f)
-        GL11.glColor3f(1.0f, 1.0f, 0.0f)
-        GL11.glVertex2f(-0.5f, 0.5f)
-        GL11.glEnd()
+        // VAOをバインドして描画
+        GL30.glBindVertexArray(vaoId)
+        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, 3)
+        GL30.glBindVertexArray(0)
 
         // バッファのスワップ
         GLFW.glfwSwapBuffers(window)
@@ -124,6 +141,8 @@ object Main extends App {
     }
 
     // 終了処理
+    GL15.glDeleteBuffers(vboId)
+    GL30.glDeleteVertexArrays(vaoId)
     GLFW.glfwDestroyWindow(window)
     GLFW.glfwTerminate()
 }
