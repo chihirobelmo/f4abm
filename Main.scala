@@ -69,6 +69,14 @@ object Main extends App {
         // ウィンドウを表示
         GLFW.glfwShowWindow(window)
 
+        runGame(window)
+
+        GLFW.glfwDestroyWindow(window)
+        GLFW.glfwTerminate()
+    }
+
+    def runGame(window: Long) {
+
         // 頂点データ
         val vertices: Array[Float] = Array(
             -0.5f, -0.5f, +0.0f, // 左下
@@ -113,12 +121,9 @@ object Main extends App {
         // 終了処理
         GL15.glDeleteBuffers(vboId)
         GL30.glDeleteVertexArrays(vaoId)
-        GLFW.glfwDestroyWindow(window)
-        GLFW.glfwTerminate()
     }
 
-    val gameLoop = (window: Long, shaderProgram: Int, vertexShader: Int, fragmentShader: Int, vaoId: Int) => {
-
+    def keyboardAndMouse(window: Long) {
         GLFW.glfwSetKeyCallback(window, (window, key, scancode, action, mods) => {
             action match {
                 case GLFW.GLFW_PRESS => {
@@ -143,7 +148,9 @@ object Main extends App {
         GLFW.glfwSetCursorPosCallback(window, (window, xpos, ypos) => {
             println(s"マウス位置が変更されました: ($xpos, $ypos)")
         })
+    }
 
+    def render(window: Long, shaderProgram: Int, vertexShader: Int, fragmentShader: Int, vaoId: Int) {
         // 背景色を設定
         GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
@@ -162,6 +169,12 @@ object Main extends App {
 
         // バッファのスワップ
         GLFW.glfwSwapBuffers(window)
+    }
+
+    def gameLoop (window: Long, shaderProgram: Int, vertexShader: Int, fragmentShader: Int, vaoId: Int) {
+
+        keyboardAndMouse(window)
+        render(window, shaderProgram, vertexShader, fragmentShader, vaoId)
 
         // イベントの処理
         GLFW.glfwPollEvents()
