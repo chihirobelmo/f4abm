@@ -1,15 +1,23 @@
+import org.lwjgl.opengl._
 import org.lwjgl._
 import org.lwjgl.glfw._
-import org.lwjgl.opengl._
 import org.lwjgl.system.MemoryUtil
 
-class Primitive(vertices: Array[Float]) {
-    
-    val vaoId = createVao()
-    val vboId = createVbo(vertices)
+trait Renderable {
+    def render(): Unit
+    def end(): Unit
+}
+
+class Primitive() extends Renderable {
+
+    var vaoId_ = 0
+    var vboId_ = 0
+    var vertexShader_ = 0
+    var fragmentShader_ = 0
+    var shaderProgram_ = 0
 
     // 頂点シェーダーコード
-    val vertexShaderSource =
+    private val vertexShaderSource_ =
     """
     #version 330 core
     layout(location = 0) in vec3 aPos;
@@ -19,7 +27,7 @@ class Primitive(vertices: Array[Float]) {
     """
 
     // フラグメントシェーダーコード
-    val fragmentShaderSource =
+    private val fragmentShaderSource_ =
     """
     #version 330 core
     out vec4 FragColor;
@@ -28,37 +36,15 @@ class Primitive(vertices: Array[Float]) {
     }
     """
 
-    // シェーダープログラムの作成
-    val vertexShader = compileShader(vertexShaderSource, GL20.GL_VERTEX_SHADER)
-    val fragmentShader = compileShader(fragmentShaderSource, GL20.GL_FRAGMENT_SHADER)
+    def init(): Unit = {
+        this.vaoId_ = GL30.glGenVertexArrays()
+        this.vboId_ = GL15.glGenBuffers()
 
-    val shaderProgram = GL20.glCreateProgram()
+        // シェーダープログラムの作成
+        this.vertexShader_ = compileShader(this.vertexShaderSource_, GL20.GL_VERTEX_SHADER)
+        this.fragmentShader_ = compileShader(this.fragmentShaderSource_, GL20.GL_FRAGMENT_SHADER)
 
-    private def createVao(): Int = {
-
-        // VAO作成
-        val vaoId = GL30.glGenVertexArrays()
-        GL30.glBindVertexArray(vaoId)
-
-        vaoId
-    }
-
-    private def createVbo(vertices: Array[Float]): Int = {
-
-        // VBO作成
-        val vboId = GL15.glGenBuffers()
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vboId)
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertices, GL15.GL_STATIC_DRAW)
-
-        // 頂点属性の設定
-        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 3 * 4, 0)
-        GL20.glEnableVertexAttribArray(0)
-
-        // バインド解除
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0)
-        GL30.glBindVertexArray(0)
-
-        vboId
+        this.shaderProgram_ = GL20.glCreateProgram()
     }
 
     private def compileShader(source: String, shaderType: Int): Int = {
@@ -73,30 +59,48 @@ class Primitive(vertices: Array[Float]) {
         shader
     }
 
-    def render() {
+    override def render(): Unit = {
+        GL20.glAttachShader(shaderProgram_, vertexShader_)
+        GL20.glAttachShader(shaderProgram_, fragmentShader_)
+        GL20.glLinkProgram(shaderProgram_)
 
-        GL20.glAttachShader(shaderProgram, vertexShader)
-        GL20.glAttachShader(shaderProgram, fragmentShader)
-        GL20.glLinkProgram(shaderProgram)
+        GL20.glUseProgram(shaderProgram_)
 
-        // シェーダープログラムを使用
-        GL20.glUseProgram(shaderProgram)
-
-        // VAOをバインドして描画
-        GL30.glBindVertexArray(vaoId)
+        GL30.glBindVertexArray(vaoId_)
         GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, 3)
-
         GL30.glBindVertexArray(0)
     }
 
-    def end() {
-        GL15.glDeleteBuffers(vboId)
-        GL30.glDeleteVertexArrays(vaoId)
+    override def end(): Unit = {
+        GL15.glDeleteBuffers(vboId_)
+        GL30.glDeleteVertexArrays(vaoId_)
     }
 }
 
-object Main extends App {
+class Triangle() extends Primitive() {
+    init()
 
+    // 頂点データ
+    val vertices: Array[Float] = Array(
+        -0.5f, -0.5f, 0.0f, // 左下
+        0.5f, -0.5f, 0.0f,  // 右下
+        0.0f,  0.5f, 0.0f   // 上
+    )
+
+    GL30.glBindVertexArray(this.vaoId_)
+    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vboId_)
+    GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertices, GL15.GL_STATIC_DRAW)
+
+    // 頂点属性の設定
+    GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 3 * 4, 0)
+    GL20.glEnableVertexAttribArray(0)
+
+    // バインド解除
+    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0)
+    GL30.glBindVertexArray(0)
+}
+
+object Main extends App {
     // 初期化
     if (!GLFW.glfwInit()) {
         throw new IllegalStateException("GLFWの初期化に失敗しました")
@@ -108,36 +112,28 @@ object Main extends App {
     GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE)
 
     // ウィンドウ作成
-    val window_ = GLFW.glfwCreateWindow(800, 600, "Scala LWJGL Input Example", MemoryUtil.NULL, MemoryUtil.NULL)
-    if (window_ == MemoryUtil.NULL) {
+    val window = GLFW.glfwCreateWindow(800, 600, "Scala LWJGL Input Example", MemoryUtil.NULL, MemoryUtil.NULL)
+    if (window == MemoryUtil.NULL) {
         throw new RuntimeException("ウィンドウの作成に失敗しました")
     }
 
     // コンテキストを現在のスレッドに設定
-    GLFW.glfwMakeContextCurrent(window_)
+    GLFW.glfwMakeContextCurrent(window)
     GL.createCapabilities()
 
     // ウィンドウを表示
-    GLFW.glfwShowWindow(window_)
+    GLFW.glfwShowWindow(window)
 
     runGame()
 
-    GLFW.glfwDestroyWindow(window_)
+    GLFW.glfwDestroyWindow(window)
     GLFW.glfwTerminate()
 
-    def runGame() {
-
-        // 頂点データ
-        val vertices: Array[Float] = Array(
-            -0.5f, -0.5f, +0.0f, // 左下
-            +0.5f, -0.5f, +0.0f, // 右下
-            +0.0f, +0.5f, +0.0f  // 上
-        )
-        
-        val primitive = new Primitive(vertices)
+    def runGame(): Unit = {
+        val primitive = new Triangle()
 
         // ループ
-        while (!GLFW.glfwWindowShouldClose(window_)) {
+        while (!GLFW.glfwWindowShouldClose(window)) {
             gameLoop(primitive)
         }
 
@@ -145,50 +141,14 @@ object Main extends App {
         primitive.end()
     }
 
-    def keyboardAndMouse() {
-        GLFW.glfwSetKeyCallback(window_, (window, key, scancode, action, mods) => {
-            action match {
-                case GLFW.GLFW_PRESS => {
-                    println(s"キー $key が押されました")
-                    if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_ESCAPE) == GLFW.GLFW_PRESS) {
-                        GLFW.glfwSetWindowShouldClose(window, true)
-                    }
-                }
-                case GLFW.GLFW_RELEASE => println(s"キー $key が離されました")
-                case _ =>
-            }
-        })
-
-        GLFW.glfwSetMouseButtonCallback(window_, (window, button, action, mods) => {
-            action match {
-                case GLFW.GLFW_PRESS => println(s"マウスボタン $button が押されました")
-                case GLFW.GLFW_RELEASE => println(s"マウスボタン $button が離されました")
-                case _ =>
-            }
-        })
-
-        GLFW.glfwSetCursorPosCallback(window_, (window, xpos, ypos) => {
-            println(s"マウス位置が変更されました: ($xpos, $ypos)")
-        })
-    }
-
-    def render(primitive: Primitive) {
-        // 背景色を設定
+    def gameLoop(primitive: Renderable): Unit = {
+        
         GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
 
         primitive.render()
 
-        // バッファのスワップ
-        GLFW.glfwSwapBuffers(window_)
-    }
-
-    def gameLoop(primitive: Primitive) {
-
-        keyboardAndMouse()
-        render(primitive)
-
-        // イベントの処理
+        GLFW.glfwSwapBuffers(window)
         GLFW.glfwPollEvents()
     }
 }
