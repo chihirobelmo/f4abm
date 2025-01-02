@@ -73,7 +73,7 @@ class Primitive(vertices: Array[Float]) {
         shader
     }
 
-    def render(window: Long) {
+    def render() {
 
         GL20.glAttachShader(shaderProgram, vertexShader)
         GL20.glAttachShader(shaderProgram, fragmentShader)
@@ -97,39 +97,35 @@ class Primitive(vertices: Array[Float]) {
 
 object Main extends App {
 
-    windowLife()
-    
-    def windowLife() {
-        // 初期化
-        if (!GLFW.glfwInit()) {
-            throw new IllegalStateException("GLFWの初期化に失敗しました")
-        }
-
-        // ウィンドウの設定
-        GLFW.glfwDefaultWindowHints()
-        GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE)
-        GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE)
-
-        // ウィンドウ作成
-        val window = GLFW.glfwCreateWindow(800, 600, "Scala LWJGL Input Example", MemoryUtil.NULL, MemoryUtil.NULL)
-        if (window == MemoryUtil.NULL) {
-            throw new RuntimeException("ウィンドウの作成に失敗しました")
-        }
-
-        // コンテキストを現在のスレッドに設定
-        GLFW.glfwMakeContextCurrent(window)
-        GL.createCapabilities()
-
-        // ウィンドウを表示
-        GLFW.glfwShowWindow(window)
-
-        runGame(window)
-
-        GLFW.glfwDestroyWindow(window)
-        GLFW.glfwTerminate()
+    // 初期化
+    if (!GLFW.glfwInit()) {
+        throw new IllegalStateException("GLFWの初期化に失敗しました")
     }
 
-    def runGame(window: Long) {
+    // ウィンドウの設定
+    GLFW.glfwDefaultWindowHints()
+    GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE)
+    GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE)
+
+    // ウィンドウ作成
+    val window_ = GLFW.glfwCreateWindow(800, 600, "Scala LWJGL Input Example", MemoryUtil.NULL, MemoryUtil.NULL)
+    if (window_ == MemoryUtil.NULL) {
+        throw new RuntimeException("ウィンドウの作成に失敗しました")
+    }
+
+    // コンテキストを現在のスレッドに設定
+    GLFW.glfwMakeContextCurrent(window_)
+    GL.createCapabilities()
+
+    // ウィンドウを表示
+    GLFW.glfwShowWindow(window_)
+
+    runGame()
+
+    GLFW.glfwDestroyWindow(window_)
+    GLFW.glfwTerminate()
+
+    def runGame() {
 
         // 頂点データ
         val vertices: Array[Float] = Array(
@@ -141,16 +137,16 @@ object Main extends App {
         val primitive = new Primitive(vertices)
 
         // ループ
-        while (!GLFW.glfwWindowShouldClose(window)) {
-            gameLoop(window, primitive)
+        while (!GLFW.glfwWindowShouldClose(window_)) {
+            gameLoop(primitive)
         }
 
         // 終了処理
         primitive.end()
     }
 
-    def keyboardAndMouse(window: Long) {
-        GLFW.glfwSetKeyCallback(window, (window, key, scancode, action, mods) => {
+    def keyboardAndMouse() {
+        GLFW.glfwSetKeyCallback(window_, (window, key, scancode, action, mods) => {
             action match {
                 case GLFW.GLFW_PRESS => {
                     println(s"キー $key が押されました")
@@ -163,7 +159,7 @@ object Main extends App {
             }
         })
 
-        GLFW.glfwSetMouseButtonCallback(window, (window, button, action, mods) => {
+        GLFW.glfwSetMouseButtonCallback(window_, (window, button, action, mods) => {
             action match {
                 case GLFW.GLFW_PRESS => println(s"マウスボタン $button が押されました")
                 case GLFW.GLFW_RELEASE => println(s"マウスボタン $button が離されました")
@@ -171,26 +167,26 @@ object Main extends App {
             }
         })
 
-        GLFW.glfwSetCursorPosCallback(window, (window, xpos, ypos) => {
+        GLFW.glfwSetCursorPosCallback(window_, (window, xpos, ypos) => {
             println(s"マウス位置が変更されました: ($xpos, $ypos)")
         })
     }
 
-    def render(window: Long, primitive: Primitive) {
+    def render(primitive: Primitive) {
         // 背景色を設定
         GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
 
-        primitive.render(window)
+        primitive.render()
 
         // バッファのスワップ
-        GLFW.glfwSwapBuffers(window)
+        GLFW.glfwSwapBuffers(window_)
     }
 
-    def gameLoop(window: Long, primitive: Primitive) {
+    def gameLoop(primitive: Primitive) {
 
-        keyboardAndMouse(window)
-        render(window, primitive)
+        keyboardAndMouse()
+        render(primitive)
 
         // イベントの処理
         GLFW.glfwPollEvents()
