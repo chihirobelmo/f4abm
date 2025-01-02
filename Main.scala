@@ -2,6 +2,8 @@ import org.lwjgl.opengl._
 import org.lwjgl._
 import org.lwjgl.glfw._
 import org.lwjgl.system.MemoryUtil
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 trait Renderable {
     def render(): Unit
@@ -123,6 +125,13 @@ object Main extends App {
 
     // ウィンドウを表示
     GLFW.glfwShowWindow(window)
+
+    // Create and start TrttClient
+    val trttClient = new TrttClient()
+    trttClient.connect("127.0.0.1", 10308)
+    Future {
+        trttClient.run()
+    }
 
     runGame()
 
