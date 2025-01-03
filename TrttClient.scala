@@ -56,11 +56,14 @@ class TrttClient {
     }
 
     def parseData(data: String): Unit = {
+        // usually we get each line of data but FWIW
         val lines = data.split("\u000A")
         lines.foreach { line =>
+            // time stamp line: #123456.789
             if (line.startsWith("#")) {
                 val timestamp = line.stripPrefix("#").toDouble
                 println(s"Timestamp: $timestamp")
+            // ID and attributes line: 1,attr1=val1,attr2=val2
             } else {
                 val parts = line.split(",")
                 val id = parts(0)
