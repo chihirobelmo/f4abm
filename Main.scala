@@ -1,4 +1,4 @@
-import com.example.render.{Renderable, Triangle, AirTrack}
+import com.example.render.{Renderable, Triangle, AirTrack, FontRenderer}
 import org.lwjgl.opengl._
 import org.lwjgl._
 import org.lwjgl.glfw._
@@ -55,6 +55,9 @@ object Main extends App {
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
 
             primitive.srt(1.0f, 45.0f, new Vector3f(0.5f, 0.5f, 0.0f)).preRender().render()
+
+            // 文字列を描画
+            FontRenderer.drawString(10f, 10f, "HELLO WORLD 1234567890")
 
             GLFW.glfwSwapBuffers(window)
             GLFW.glfwPollEvents()

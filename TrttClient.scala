@@ -49,7 +49,8 @@ class TrttClient {
         out.flush()
 
         val response = buf.readLine()
-        if (response != null && response.startsWith("XtraLib.Stream.0")) {
+        if (response != null && response.startsWith("XtraLib.Stream.0") 
+                             && buf.readLine.startsWith("Tacview.RealTimeTelemetry.0")) {
             connected = true
             true
         } else {
@@ -76,33 +77,27 @@ class TrttClient {
     }
 
     def parseLine(line: String): Unit = {
-        // time stamp line: #123456.789
+        
         if (line.startsWith("#")) {
+            // time stamp line: #123456.789
             timestamp = line.stripPrefix("#").toString
-        // ID and attributes line: 1,attr1=val1,attr2=val2
         } else {
+            // ID and attributes line: 1,attr1=val1,attr2=val2
             val parts = line.split(",")
+
+            if (parts.length <= 1) {
+                println(s"LINE: $line")
+                return
+            }
+            
             val id = parts(0)
-            if (parts.length <= 1) return
+
             val attributes = parts.tail.map { attr =>
                 val Array(key, value) = attr.split("=")
                 key -> value
             }.toMap
 
             idMap += (id -> (attributes + ("TimeStamp" -> timestamp)))
-
-            // // Extract specific attributes
-            // val t = attributes.getOrElse("T", "Unknown")
-            // val category = attributes.getOrElse("Category", "Unknown")
-            // val name = attributes.getOrElse("Name", "Unknown")
-            // val pilot = attributes.getOrElse("Pilot", "Unknown")
-            // val coalition = attributes.getOrElse("Coalition", "Unknown")
-            // val country = attributes.getOrElse("Country", "Unknown")
-            // val typeAttr = attributes.getOrElse("Type", "Unknown")
-            // val ias = attributes.getOrElse("IAS", "0").toDouble
-            // val throttle = attributes.getOrElse("Throttle", "0").toDouble
-
-            // println(s"ID: $id, T: $t, Category: $category, Name: $name, Pilot: $pilot, Coalition: $coalition, Country: $country, Type: $typeAttr, IAS: $ias, Throttle: $throttle")
         }
     }
 
