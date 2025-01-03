@@ -19,11 +19,16 @@ object Util {
 }
 
 trait Renderable {
-    def render(): Unit
-    def end(): Unit
+    def preRender(): Renderable
+    def render(): Renderable
+    def end(): Renderable
 }
 
-class Primitive() extends Renderable {
+trait Renderable2D extends Renderable {
+    def srt(scale: Float, rot: Float, tran: Vector3f): Renderable2D
+}
+
+abstract class Primitive() extends Renderable2D {
 
     var vaoId_ = 0
     var vboId_ = 0
@@ -52,6 +57,8 @@ class Primitive() extends Renderable {
     }
     """
 
+    private val srtMatrix = new Matrix4f()
+
     def init(): Unit = {
         this.vaoId_ = GL30.glGenVertexArrays()
         this.vboId_ = GL15.glGenBuffers()
@@ -75,19 +82,12 @@ class Primitive() extends Renderable {
         shader
     }
 
-    override def render(): Unit = {
+    override def preRender(): Renderable = {
         GL20.glAttachShader(shaderProgram_, vertexShader_)
         GL20.glAttachShader(shaderProgram_, fragmentShader_)
         GL20.glLinkProgram(shaderProgram_)
 
         GL20.glUseProgram(shaderProgram_)
-
-        // Create the SRT matrix
-        val scale = new Matrix4f().scaling(1.0f, 1.0f, 1.0f)
-        val rotation = new Matrix4f().rotateZ(Math.toRadians(45).toFloat)
-        val translation = new Matrix4f().translation(0.5f, 0.5f, 0.0f)
-        val srtMatrix = new Matrix4f()
-        srtMatrix.mul(translation).mul(rotation).mul(scale)
 
         // Pass the matrix to the shader
         val srtMatrixLocation = GL20.glGetUniformLocation(shaderProgram_, "srtMatrix")
@@ -96,14 +96,23 @@ class Primitive() extends Renderable {
         GL20.glUniformMatrix4fv(srtMatrixLocation, false, matrixBuffer)
         MemoryUtil.memFree(matrixBuffer)
 
-        GL30.glBindVertexArray(vaoId_)
-        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, 3)
-        GL30.glBindVertexArray(0)
+        this
     }
 
-    override def end(): Unit = {
+    override def end(): Renderable = {
         GL15.glDeleteBuffers(vboId_)
         GL30.glDeleteVertexArrays(vaoId_)
+
+        this
+    }
+
+    override def srt(scale: Float, rot: Float, tran: Vector3f): Renderable2D = {
+        val scaleMatrix = new Matrix4f().scaling(scale, scale, scale)
+        val rotationMatrix = new Matrix4f().rotateZ(Math.toRadians(rot).toFloat)
+        val translationMatrix = new Matrix4f().translation(tran)
+        srtMatrix.identity().mul(translationMatrix).mul(rotationMatrix).mul(scaleMatrix)
+
+        this
     }
 }
 
@@ -128,6 +137,14 @@ class Triangle() extends Primitive() {
     // バインド解除
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0)
     GL30.glBindVertexArray(0)
+
+    override def render(): Renderable = {
+        GL30.glBindVertexArray(vaoId_)
+        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, 3)
+        GL30.glBindVertexArray(0)
+
+        this
+    }
 }
 
 class AirTrack() extends Primitive() {
@@ -153,15 +170,11 @@ class AirTrack() extends Primitive() {
     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0)
     GL30.glBindVertexArray(0)
 
-    override def render(): Unit = {
-        GL20.glAttachShader(shaderProgram_, vertexShader_)
-        GL20.glAttachShader(shaderProgram_, fragmentShader_)
-        GL20.glLinkProgram(shaderProgram_)
-
-        GL20.glUseProgram(shaderProgram_)
-
+    override def render(): Renderable = {
         GL30.glBindVertexArray(vaoId_)
         GL11.glDrawArrays(GL11.GL_LINES, 0, vertices.length / 3)
         GL30.glBindVertexArray(0)
+
+        this
     }
 }

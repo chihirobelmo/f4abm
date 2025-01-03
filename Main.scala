@@ -6,6 +6,7 @@ import org.lwjgl.system.MemoryUtil
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable.HashMap
+import org.joml.Vector3f
 
 object Main extends App {
 
@@ -53,7 +54,7 @@ object Main extends App {
             GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
 
-            primitive.render()
+            primitive.srt(1.0f, 45.0f, new Vector3f(0.5f, 0.5f, 0.0f)).preRender().render()
 
             GLFW.glfwSwapBuffers(window)
             GLFW.glfwPollEvents()
