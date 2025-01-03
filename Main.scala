@@ -57,7 +57,7 @@ object Main extends App {
             primitive.srt(1.0f, 45.0f, new Vector3f(0.5f, 0.5f, 0.0f)).preRender().render()
 
             // 文字列を描画
-            FontRenderer.drawString(10f, 10f, "HELLO WORLD 1234567890", 800, 600)
+            new FontRenderer().preRender().drawString(10f, 10f, "HELLO WORLD 1234567890", 800, 600)
 
             GLFW.glfwSwapBuffers(window)
             GLFW.glfwPollEvents()
