@@ -262,16 +262,16 @@ class FontRenderer() extends Primitive() {
         GL11.glColor3f(1.0f, 1.0f, 1.0f)
         GL11.glBegin(GL11.GL_QUADS)
         for (i <- 0 until FontData.fontHeight) {
-        for (j <- 0 until FontData.fontWidth) {
-            if ((data(i) & (1 << (FontData.fontWidth - 1 - j))) != 0) {
-            val xPos = (x + j) / windowWidth * 2 - 1
-            val yPos = (y + i) / windowHeight * 2 - 1
-            GL11.glVertex2f(xPos, yPos)
-            GL11.glVertex2f(xPos + 2.0f / windowWidth, yPos)
-            GL11.glVertex2f(xPos + 2.0f / windowWidth, yPos + 2.0f / windowHeight)
-            GL11.glVertex2f(xPos, yPos + 2.0f / windowHeight)
+            for (j <- 0 until FontData.fontWidth) {
+                if ((data(FontData.fontHeight - 1 - i) & (1 << (FontData.fontWidth - 1 - j))) != 0) {
+                    val xPos = (x + j) / windowWidth * 2 - 1
+                    val yPos = (y + i) / windowHeight * 2 - 1
+                    GL11.glVertex2f(xPos, yPos)
+                    GL11.glVertex2f(xPos + 2.0f / windowWidth, yPos)
+                    GL11.glVertex2f(xPos + 2.0f / windowWidth, yPos + 2.0f / windowHeight)
+                    GL11.glVertex2f(xPos, yPos + 2.0f / windowHeight)
+                }
             }
-        }
         }
         GL11.glEnd()
     }
