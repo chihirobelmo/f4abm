@@ -66,12 +66,23 @@ class TrttClient {
             val parts = line.split(",")
             val id = parts(0)
             if (parts.length <= 1) return
-            val attributes = parts(1).split(",").map { attr =>
+            val attributes = parts.tail.map { attr =>
                 val Array(key, value) = attr.split("=")
                 key -> value
             }.toMap
 
-            println(s"ID: $id, Attributes: $attributes")
+            // Extract specific attributes
+            val t = attributes.getOrElse("T", "Unknown")
+            val category = attributes.getOrElse("Category", "Unknown")
+            val name = attributes.getOrElse("Name", "Unknown")
+            val pilot = attributes.getOrElse("Pilot", "Unknown")
+            val coalition = attributes.getOrElse("Coalition", "Unknown")
+            val country = attributes.getOrElse("Country", "Unknown")
+            val typeAttr = attributes.getOrElse("Type", "Unknown")
+            val ias = attributes.getOrElse("IAS", "0").toDouble
+            val throttle = attributes.getOrElse("Throttle", "0").toDouble
+
+            println(s"ID: $id, T: $t, Category: $category, Name: $name, Pilot: $pilot, Coalition: $coalition, Country: $country, Type: $typeAttr, IAS: $ias, Throttle: $throttle")
         }
     }
 
