@@ -69,7 +69,7 @@ object FontRenderer {
     Array(0x7F, 0x63, 0x31, 0x18, 0x0C, 0x46, 0x7F, 0x00)  // 'Z'
   )
 
-  def drawChar(x: Float, y: Float, c: Char): Unit = {
+  def drawChar(x: Float, y: Float, c: Char, windowWidth: Int, windowHeight: Int): Unit = {
     val index = c - ' '
     if (index < 0 || index >= fontData.length) return
 
@@ -79,19 +79,21 @@ object FontRenderer {
     for (i <- 0 until fontHeight) {
       for (j <- 0 until fontWidth) {
         if ((data(i) & (1 << (fontWidth - 1 - j))) != 0) {
-          glVertex2f(x + j, y + i)
-          glVertex2f(x + j + 1, y + i)
-          glVertex2f(x + j + 1, y + i + 1)
-          glVertex2f(x + j, y + i + 1)
+          val xPos = (x + j) / windowWidth * 2 - 1
+          val yPos = (y + i) / windowHeight * 2 - 1
+          glVertex2f(xPos, yPos)
+          glVertex2f(xPos + 2.0f / windowWidth, yPos)
+          glVertex2f(xPos + 2.0f / windowWidth, yPos + 2.0f / windowHeight)
+          glVertex2f(xPos, yPos + 2.0f / windowHeight)
         }
       }
     }
     glEnd()
   }
 
-  def drawString(x: Float, y: Float, str: String): Unit = {
+  def drawString(x: Float, y: Float, str: String, windowWidth: Int, windowHeight: Int): Unit = {
     for (i <- str.indices) {
-      drawChar(x + i * fontWidth, y, str(i))
+      drawChar(x + i * fontWidth, y, str(i), windowWidth, windowHeight)
     }
   }
 }
