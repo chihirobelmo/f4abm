@@ -42,11 +42,12 @@ class TrttClient {
 
     private def processData(buf: BufferedReader): Unit = {
         try {
-            var line: String = null
-            while (connected && { line = buf.readLine(); line != null }) {
+            var data: String = null
+            while (connected && { data = buf.readLine(); data != null }) {
                 // Process each line of data here
-                val parsed = parseData(line)
-                //println(s"Received: $parsed")
+                val lines = data.split("\u000A")
+                lines.foreach { line => parseLine(line) }
+                //println(s"Received: $data")
             }
         } catch {
             case e: Exception =>
@@ -55,26 +56,22 @@ class TrttClient {
         }
     }
 
-    def parseData(data: String): Unit = {
-        // usually we get each line of data but FWIW
-        val lines = data.split("\u000A")
-        lines.foreach { line =>
-            // time stamp line: #123456.789
-            if (line.startsWith("#")) {
-                val timestamp = line.stripPrefix("#").toDouble
-                println(s"Timestamp: $timestamp")
-            // ID and attributes line: 1,attr1=val1,attr2=val2
-            } else {
-                val parts = line.split(",")
-                val id = parts(0)
-                if (parts.length <= 1) return
-                val attributes = parts(1).split(",").map { attr =>
-                    val Array(key, value) = attr.split("=")
-                    key -> value
-                }.toMap
+    def parseLine(line: String): Unit = {
+        // time stamp line: #123456.789
+        if (line.startsWith("#")) {
+            val timestamp = line.stripPrefix("#").toDouble
+            println(s"Timestamp: $timestamp")
+        // ID and attributes line: 1,attr1=val1,attr2=val2
+        } else {
+            val parts = line.split(",")
+            val id = parts(0)
+            if (parts.length <= 1) return
+            val attributes = parts(1).split(",").map { attr =>
+                val Array(key, value) = attr.split("=")
+                key -> value
+            }.toMap
 
-                println(s"ID: $id, Attributes: $attributes")
-            }
+            println(s"ID: $id, Attributes: $attributes")
         }
     }
 
