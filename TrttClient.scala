@@ -30,18 +30,9 @@ class TrttClient {
         system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
             {
                 idMap.foreach { case (id, attributes) =>
-                    // Extract specific attributes
-                    val t = attributes.getOrElse("T", "Unknown")
-                    val category = attributes.getOrElse("Category", "Unknown")
-                    val name = attributes.getOrElse("Name", "Unknown")
-                    val pilot = attributes.getOrElse("Pilot", "Unknown")
-                    val coalition = attributes.getOrElse("Coalition", "Unknown")
-                    val country = attributes.getOrElse("Country", "Unknown")
-                    val typeAttr = attributes.getOrElse("Type", "Unknown")
-                    val ias = attributes.getOrElse("IAS", "0").toDouble
-                    val throttle = attributes.getOrElse("Throttle", "0").toDouble
-
-                    println(s"ID: $id, T: $t, Category: $category, Name: $name, Pilot: $pilot, Coalition: $coalition, Country: $country, Type: $typeAttr, IAS: $ias, Throttle: $throttle")
+                    print(s"ID: $id")
+                    attributes.foreach { case (key, value) => print(s", $key: $value") }
+                    println()
                 }
             }
         }

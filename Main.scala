@@ -1,11 +1,14 @@
+import com.example.render.{Renderable, Triangle, AirTrack}
 import org.lwjgl.opengl._
 import org.lwjgl._
 import org.lwjgl.glfw._
 import org.lwjgl.system.MemoryUtil
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.mutable.HashMap
 
 object Main extends App {
+
     // 初期化
     if (!GLFW.glfwInit()) {
         throw new IllegalStateException("GLFWの初期化に失敗しました")
@@ -46,21 +49,17 @@ object Main extends App {
 
         // ループ
         while (!GLFW.glfwWindowShouldClose(window)) {
-            gameLoop(primitive)
+
+            GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
+            GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
+
+            primitive.render()
+
+            GLFW.glfwSwapBuffers(window)
+            GLFW.glfwPollEvents()
         }
 
         // 終了処理
         primitive.end()
-    }
-
-    def gameLoop(primitive: Renderable): Unit = {
-        
-        GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
-        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
-
-        primitive.render()
-
-        GLFW.glfwSwapBuffers(window)
-        GLFW.glfwPollEvents()
     }
 }
