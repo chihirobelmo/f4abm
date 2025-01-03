@@ -45,12 +45,33 @@ class TrttClient {
             var line: String = null
             while (connected && { line = buf.readLine(); line != null }) {
                 // Process each line of data here
-                println(s"Received: $line")
+                val parsed = parseData(line)
+                //println(s"Received: $parsed")
             }
         } catch {
             case e: Exception =>
                 setStatus(ThreadState.FAILED, s"Error processing data: ${e.getMessage}")
                 disconnect()
+        }
+    }
+
+    def parseData(data: String): Unit = {
+        val lines = data.split("\u000A")
+        lines.foreach { line =>
+            if (line.startsWith("#")) {
+                val timestamp = line.stripPrefix("#").toDouble
+                println(s"Timestamp: $timestamp")
+            } else {
+                val parts = line.split(",")
+                val id = parts(0)
+                if (parts.length <= 1) return
+                val attributes = parts(1).split(",").map { attr =>
+                    val Array(key, value) = attr.split("=")
+                    key -> value
+                }.toMap
+
+                println(s"ID: $id, Attributes: $attributes")
+            }
         }
     }
 
