@@ -9,19 +9,26 @@ import org.joml.Matrix4f
 import org.joml.Vector3f
 
 class Camera() {
+    
     private val viewMatrix = new Matrix4f()
     private val projectionMatrix = new Matrix4f()
 
-    def setViewMatrix(position: Vector3f, target: Vector3f, up: Vector3f): Camera = {
+    var position: Vector3f = new Vector3f(0.0f, 0.0f, 1.0f)
+    var target: Vector3f = new Vector3f(0.0f, 0.0f, 0.0f)
+    var up: Vector3f = new Vector3f(0.0f, 1.0f, 0.0f)
+    var fov: Float = 45.0f
+    var aspectRatio: Float = 800.0f / 600.0f
+    var near: Float = 0.1f
+    var far: Float = 100.0f
+
+    update()
+
+    def update() {
         viewMatrix.identity()
         viewMatrix.lookAt(position, target, up)
-        this
-    }
 
-    def setProjectionMatrix(fov: Float, aspectRatio: Float, near: Float, far: Float): Camera = {
         projectionMatrix.identity()
         projectionMatrix.perspective(fov, aspectRatio, near, far)
-        this
     }
 
     def getViewMatrix(): Matrix4f = {
@@ -64,7 +71,7 @@ object PrimitiveShader {
     uniform mat4 viewMatrix;
     uniform mat4 projMatrix;
     void main() {
-        gl_Position = srtMatrix * vec4(aPos, 1.0);
+        gl_Position = projMatrix * viewMatrix * srtMatrix * vec4(aPos, 1.0);
         vertexColor = aColor;
     }
     """

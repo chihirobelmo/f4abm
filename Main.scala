@@ -41,8 +41,6 @@ object Main extends App {
     }
 
     val camera = new Camera()
-    .setViewMatrix(new Vector3f(0.0f, 0.0f, 3.0f), new Vector3f(0.0f, 0.0f, 0.0f), new Vector3f(0.0f, 1.0f, 0.0f))
-    .setProjectionMatrix(45.0f, 800.0f / 600.0f, 0.1f, 100.0f)
 
     runGame()
 
