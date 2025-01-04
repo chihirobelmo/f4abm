@@ -5,8 +5,7 @@ import org.lwjgl._
 import org.lwjgl.glfw._
 import org.lwjgl.system.MemoryUtil
 import org.lwjgl.system.MemoryStack
-import org.joml.Matrix4f
-import org.joml.Vector3f
+import org.joml.{Vector3f, Vector2f, Matrix4f}
 
 class Camera() {
     
@@ -84,6 +83,12 @@ class Camera() {
         val width = height * aspectRatio
 
         new Vector3f(width, height, 0)
+    }
+
+    def screenToCameraNormalized(screenPos: Vector2f, windowWidth: Int, windowHeight: Int): Vector2f = {
+        val normalizedX = (2.0f * screenPos.x) / windowWidth - 1.0f
+        val normalizedY = 1.0f - (2.0f * screenPos.y) / windowHeight
+        new Vector2f(normalizedX, normalizedY)
     }
 
     def fixedPoint(window: Long, xyz: Vector3f): Vector3f = {
