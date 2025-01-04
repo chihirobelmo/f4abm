@@ -6,8 +6,7 @@ import org.lwjgl.system.MemoryUtil
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable.HashMap
-import org.joml.Vector3f
-import org.joml.Vector2f
+import org.joml.{Vector2f, Vector3f, Vector4f, Matrix4f}
 
 object Main extends App {
 
@@ -78,6 +77,8 @@ object Main extends App {
                 action match {
                     case GLFW.GLFW_PRESS => {
                         shouldMoveCamera = true
+                        val worldPos = screenToWorld(prevCursor, window, camera)
+                        println(s"クリック位置: $worldPos")
                     }
                     case GLFW.GLFW_RELEASE => {
                         shouldMoveCamera = false
@@ -116,5 +117,26 @@ object Main extends App {
 
         // 終了処理
         primitive.end()
+    }
+
+    def screenToWorld(screenPos: Vector2f, window: Long, camera: Camera): Vector3f = {
+        val width = Array(0)
+        val height = Array(0)
+        GLFW.glfwGetWindowSize(window, width, height)
+
+        val normalizedX = (2.0f * screenPos.x) / width(0) - 1.0f
+        val normalizedY = 1.0f - (2.0f * screenPos.y) / height(0)
+
+        val clipCoords = new Vector4f(normalizedX, normalizedY, -1.0f, 1.0f)
+
+        val invProjMatrix = new Matrix4f(camera.getProjectionMatrix()).invert()
+        val eyeCoords = invProjMatrix.transform(clipCoords)
+        eyeCoords.z = -1.0f
+        eyeCoords.w = 0.0f
+
+        val invViewMatrix = new Matrix4f(camera.getViewMatrix()).invert()
+        val worldCoords = invViewMatrix.transform(eyeCoords)
+
+        new Vector3f(worldCoords.x, worldCoords.y, worldCoords.z)
     }
 }
