@@ -4,8 +4,24 @@ import org.lwjgl.opengl._
 import org.lwjgl._
 import org.lwjgl.glfw._
 import org.lwjgl.system.MemoryUtil
+import org.lwjgl.system.MemoryStack
 import org.joml.Matrix4f
 import org.joml.Vector3f
+
+class Camera() {
+    private val viewMatrix = new Matrix4f()
+    private val projectionMatrix = new Matrix4f()
+
+    def getViewMatrix(position: Vector3f, target: Vector3f, up: Vector3f): Matrix4f = {
+        viewMatrix.identity()
+        viewMatrix.lookAt(position, target, up)
+    }
+
+    def getProjectionMatrix(fov: Float, aspectRatio: Float, near: Float, far: Float): Matrix4f = {
+        projectionMatrix.identity()
+        projectionMatrix.perspective(fov, aspectRatio, near, far)
+    }
+}
 
 object Util {
     def createSRT2D(scale: Vector3f, rotation: Int, translation: Vector3f): Matrix4f = {
@@ -31,18 +47,22 @@ object PrimitiveShader {
     """
     #version 330 core
     layout(location = 0) in vec3 aPos;
+    layout(location = 1) in vec3 aColor;
+    out vec3 vertexColor;
     uniform mat4 srtMatrix;
     void main() {
         gl_Position = srtMatrix * vec4(aPos, 1.0);
+        vertexColor = aColor;
     }
     """
 
     val fragmentShaderSource =
     """
     #version 330 core
+    in vec3 vertexColor;
     out vec4 FragColor;
     void main() {
-        FragColor = vec4(1.0, 0.5, 0.2, 1.0);
+        FragColor = vec4(vertexColor.r, vertexColor.g, vertexColor.b, 1.0);
     }
     """
 
@@ -62,33 +82,107 @@ object PrimitiveShader {
         }
         shader
     }
-}
 
-abstract class Primitive() extends Renderable {
+    def preRender(vaoId: Int, vboId: Int, srtMatrix: Matrix4f, vertices: Array[Float]) {
 
-    var vaoId_ = 0
-    var vboId_ = 0
+        GL30.glBindVertexArray(vaoId)
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vboId)
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertices, GL15.GL_STATIC_DRAW)
 
-    val srtMatrix = new Matrix4f()
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 6 * 4, 0)
+        GL20.glEnableVertexAttribArray(0)
 
-    def init(): Unit = {
-        this.vaoId_ = GL30.glGenVertexArrays()
-        this.vboId_ = GL15.glGenBuffers()
-    }
+        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, 6 * 4, 3 * 4)
+        GL20.glEnableVertexAttribArray(1)
 
-    override def preRender(): Renderable = {
-        GL20.glAttachShader(PrimitiveShader.shaderProgram, PrimitiveShader.vertexShader)
-        GL20.glAttachShader(PrimitiveShader.shaderProgram, PrimitiveShader.fragmentShader)
-        GL20.glLinkProgram(PrimitiveShader.shaderProgram)
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0)
+        GL30.glBindVertexArray(0)
 
-        GL20.glUseProgram(PrimitiveShader.shaderProgram)
+        GL20.glAttachShader(shaderProgram, vertexShader)
+        GL20.glAttachShader(shaderProgram, fragmentShader)
+        GL20.glLinkProgram(shaderProgram)
 
-        // Pass the matrix to the shader
-        val srtMatrixLocation = GL20.glGetUniformLocation(PrimitiveShader.shaderProgram, "srtMatrix")
+        GL20.glUseProgram(shaderProgram)
+
+        val srtMatrixLocation = GL20.glGetUniformLocation(shaderProgram, "srtMatrix")
         val matrixBuffer = MemoryUtil.memAllocFloat(16)
         srtMatrix.get(matrixBuffer)
         GL20.glUniformMatrix4fv(srtMatrixLocation, false, matrixBuffer)
         MemoryUtil.memFree(matrixBuffer)
+    }
+}
+
+class ShaderProgram(vertexShaderSource: String, fragmentShaderSource: String) {
+
+    val vertexShader = compileShader(vertexShaderSource, GL20.GL_VERTEX_SHADER)
+    val fragmentShader = compileShader(fragmentShaderSource, GL20.GL_FRAGMENT_SHADER)
+
+    val programId = GL20.glCreateProgram()
+
+    private def compileShader(source: String, shaderType: Int): Int = {
+        val shader = GL20.glCreateShader(shaderType)
+        GL20.glShaderSource(shader, source)
+        GL20.glCompileShader(shader)
+
+        // コンパイルエラーの確認
+        if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
+            throw new RuntimeException(s"シェーダーのコンパイルに失敗: ${GL20.glGetShaderInfoLog(shader)}")
+        }
+        shader
+    }
+
+    def setUniform(name: String, matrix: Matrix4f): Unit = {
+        val location = GL20.glGetUniformLocation(programId, name)
+        val stack = MemoryStack.stackPush()
+        try {
+            val buffer = stack.mallocFloat(16)
+            matrix.get(buffer)
+            GL20.glUniformMatrix4fv(location, false, buffer)
+        } finally {
+            stack.pop()
+        }
+    }
+
+    def setSrtMatrix(matrix: Matrix4f): Unit = {
+        val srtMatrixLocation = GL20.glGetUniformLocation(programId, "srtMatrix")
+        val matrixBuffer = MemoryUtil.memAllocFloat(16)
+        matrix.get(matrixBuffer)
+        GL20.glUniformMatrix4fv(srtMatrixLocation, false, matrixBuffer)
+        MemoryUtil.memFree(matrixBuffer)
+    }
+
+    def use(): Unit = {
+        GL20.glAttachShader(PrimitiveShader.shaderProgram, PrimitiveShader.vertexShader)
+        GL20.glAttachShader(PrimitiveShader.shaderProgram, PrimitiveShader.fragmentShader)
+        GL20.glLinkProgram(PrimitiveShader.shaderProgram)
+        GL20.glUseProgram(programId)
+    }
+
+    def stop(): Unit = {
+        GL20.glUseProgram(0)
+    }
+
+    def cleanup(): Unit = {
+        GL20.glDeleteProgram(programId)
+    }
+}
+
+abstract class Primitive() extends Renderable {
+
+    var vaoId_ = GL30.glGenVertexArrays()
+    var vboId_ = GL15.glGenBuffers()
+
+    val srtMatrix = new Matrix4f()
+
+    val vertices: Array[Float] = Array(
+        -0.5f, -0.5f, +0.0f, 1.0f, 0.0f, 1.0f, // 左下 白
+        +0.5f, -0.5f, +0.0f, 1.0f, 0.0f, 1.0f, // 右下 白
+        +0.0f, +0.5f, +0.0f, 1.0f, 0.0f, 1.0f  // 上 白
+    )
+
+    override def preRender(): Renderable = {
+
+        PrimitiveShader.preRender(this.vaoId_, this.vboId_, this.srtMatrix, this.vertices)
 
         this
     }
@@ -111,26 +205,13 @@ abstract class Primitive() extends Renderable {
 }
 
 class Triangle() extends Primitive() {
-    init()
 
     // 頂点データ
-    val vertices: Array[Float] = Array(
-        -0.5f, -0.5f, 0.0f, // 左下
-        0.5f, -0.5f, 0.0f,  // 右下
-        0.0f,  0.5f, 0.0f   // 上
+    override val vertices: Array[Float] = Array(
+        -0.5f, -0.5f, +0.0f, 1.0f, 1.0f, 1.0f, // 左下 白
+        +0.5f, -0.5f, +0.0f, 1.0f, 1.0f, 1.0f, // 右下 白
+        +0.0f, +0.5f, +0.0f, 1.0f, 1.0f, 1.0f  // 上 白
     )
-
-    GL30.glBindVertexArray(this.vaoId_)
-    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vboId_)
-    GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertices, GL15.GL_STATIC_DRAW)
-
-    // 頂点属性の設定
-    GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 3 * 4, 0)
-    GL20.glEnableVertexAttribArray(0)
-
-    // バインド解除
-    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0)
-    GL30.glBindVertexArray(0)
 
     override def render(): Renderable = {
         GL30.glBindVertexArray(vaoId_)
@@ -142,27 +223,14 @@ class Triangle() extends Primitive() {
 }
 
 class AirTrack() extends Primitive() {
-    init()
 
     // 頂点データ
-    val vertices: Array[Float] = Array(
+    override val vertices: Array[Float] = Array(
         -0.5f, -0.5f, +0.0f, // Line start point
         +0.5f, -0.5f, +0.0f, // Line end point
         +0.5f, +0.5f, +0.0f, // Another line start point
         -0.5f, +0.5f, +0.0f  // Another line end point
     )
-
-    GL30.glBindVertexArray(this.vaoId_)
-    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.vboId_)
-    GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertices, GL15.GL_STATIC_DRAW)
-
-    // 頂点属性の設定
-    GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 3 * 4, 0)
-    GL20.glEnableVertexAttribArray(0)
-
-    // バインド解除
-    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0)
-    GL30.glBindVertexArray(0)
 
     override def render(): Renderable = {
         GL30.glBindVertexArray(vaoId_)
@@ -310,21 +378,87 @@ class FontRenderer(x: Float, y: Float, str: String, windowWidth: Int, windowHeig
         if (index < 0 || index >= FontData.fontData.length) return
 
         val data = FontData.fontData(index)
-        GL11.glColor3f(1.0f, 1.0f, 1.0f)
-        GL11.glBegin(GL11.GL_QUADS)
+        val vertices = new Array[Float](FontData.widthPx * FontData.heightPx * 6 * 3 * 2) // 6 vertices per quad, 6 attributes (position and color)
+        var vertexIndex = 0
+        
         for (i <- 0 until FontData.heightPx) {
             for (j <- 0 until FontData.widthPx) {
                 if ((data(FontData.heightPx - 1 - i) & (1 << (FontData.widthPx - 1 - j))) != 0) {
                     val xPos = (x + j) / windowWidth_ * 2 - 1
                     val yPos = (y + i) / windowHeight_ * 2 - 1
-                    GL11.glVertex2f(xPos, yPos)
-                    GL11.glVertex2f(xPos + 2.0f / windowWidth_, yPos)
-                    GL11.glVertex2f(xPos + 2.0f / windowWidth_, yPos + 2.0f / windowHeight_)
-                    GL11.glVertex2f(xPos, yPos + 2.0f / windowHeight_)
+                    val color = Array(1.0f, 1.0f, 1.0f)
+
+                    // First triangle
+                    vertices(vertexIndex) = xPos
+                    vertices(vertexIndex + 1) = yPos
+                    vertices(vertexIndex + 2) = 0.0f
+                    vertices(vertexIndex + 3) = color(0)
+                    vertices(vertexIndex + 4) = color(1)
+                    vertices(vertexIndex + 5) = color(2)
+                    vertexIndex += 6
+
+                    vertices(vertexIndex) = xPos + 2.0f / windowWidth
+                    vertices(vertexIndex + 1) = yPos
+                    vertices(vertexIndex + 2) = 0.0f
+                    vertices(vertexIndex + 3) = color(0)
+                    vertices(vertexIndex + 4) = color(1)
+                    vertices(vertexIndex + 5) = color(2)
+                    vertexIndex += 6
+
+                    vertices(vertexIndex) = xPos
+                    vertices(vertexIndex + 1) = yPos + 2.0f / windowHeight
+                    vertices(vertexIndex + 2) = 0.0f
+                    vertices(vertexIndex + 3) = color(0)
+                    vertices(vertexIndex + 4) = color(1)
+                    vertices(vertexIndex + 5) = color(2)
+                    vertexIndex += 6
+
+                    // Second triangle
+                    vertices(vertexIndex) = xPos + 2.0f / windowWidth
+                    vertices(vertexIndex + 1) = yPos
+                    vertices(vertexIndex + 2) = 0.0f
+                    vertices(vertexIndex + 3) = color(0)
+                    vertices(vertexIndex + 4) = color(1)
+                    vertices(vertexIndex + 5) = color(2)
+                    vertexIndex += 6
+
+                    vertices(vertexIndex) = xPos + 2.0f / windowWidth
+                    vertices(vertexIndex + 1) = yPos + 2.0f / windowHeight
+                    vertices(vertexIndex + 2) = 0.0f
+                    vertices(vertexIndex + 3) = color(0)
+                    vertices(vertexIndex + 4) = color(1)
+                    vertices(vertexIndex + 5) = color(2)
+                    vertexIndex += 6
+
+                    vertices(vertexIndex) = xPos
+                    vertices(vertexIndex + 1) = yPos + 2.0f / windowHeight
+                    vertices(vertexIndex + 2) = 0.0f
+                    vertices(vertexIndex + 3) = color(0)
+                    vertices(vertexIndex + 4) = color(1)
+                    vertices(vertexIndex + 5) = color(2)
+                    vertexIndex += 6
                 }
             }
         }
-        GL11.glEnd()
+        val vaoId = GL30.glGenVertexArrays()
+        val vboId = GL15.glGenBuffers()
+
+        GL30.glBindVertexArray(vaoId)
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vboId)
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertices, GL15.GL_STATIC_DRAW)
+
+        GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 6 * 4, 0)
+        GL20.glEnableVertexAttribArray(0)
+        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, 6 * 4, 3 * 4)
+        GL20.glEnableVertexAttribArray(1)
+
+        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, vertexIndex / 6)
+
+        GL20.glDisableVertexAttribArray(0)
+        GL20.glDisableVertexAttribArray(1)
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0)
+        GL30.glBindVertexArray(0)
     }
 
     override def render(): Renderable = {
