@@ -64,8 +64,8 @@ class Camera() {
         position.z
     }
 
-    def getXY(): Vector3f = {
-        new Vector3f(position.x, position.y, 0)
+    def getPosition(): Vector3f = {
+        position
     }
 
     def calculateViewSize(window: Long): Vector3f = {

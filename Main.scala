@@ -7,6 +7,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable.HashMap
 import org.joml.{Vector2f, Vector3f, Vector4f, Matrix4f}
+import org.joml.Vector3d
 
 object Main extends App {
 
@@ -106,7 +107,7 @@ object Main extends App {
             })
 
             primitive
-            .srt(new Vector3f(1.0f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, Math.toRadians(45.0).toFloat), new Vector3f(0.5f, 0.5f, 0.0f))
+            .srt(new Vector3f(1.0f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, Math.toRadians(0.0).toFloat), new Vector3f(0.0f, 0.0f, 0.0f))
             .camera(camera)
             .preRender()
             .render()
@@ -115,10 +116,13 @@ object Main extends App {
             val height = Array(0)
             GLFW.glfwGetWindowSize(window, width, height)
 
-            val cursorPos = screenToWorld(new Vector2f(cursorPosScreenPx.x.toFloat, cursorPosScreenPx.y.toFloat), window, camera)
+            val cursorPos = screenToWorld(new Vector2f(cursorPosScreenPx.x.toFloat, cursorPosScreenPx.y.toFloat), window, camera).add(camera.getPosition())
+            val formattedCursorPos = f"(${cursorPos.x}%.2f, ${cursorPos.y}%.2f, ${cursorPos.z}%.2f)"
+            val fontPos = new Vector3f(cursorPos.x, cursorPos.y, 0.0f)
+            println(fontPos)
 
-            new FontRenderer(window, 0f, 0f, s"$cursorPos")
-            .srt(new Vector3f(1.0f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, 0.0f), camera.fixedPoint(window, new Vector3f(-0.50f, -0.50f, 0.0f)))
+            new FontRenderer(window, 0f, 0f, formattedCursorPos)
+            .srt(new Vector3f(1.0f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, 0.0f), fontPos)
             .camera(camera)
             .preRender()
             .render()
@@ -141,16 +145,28 @@ object Main extends App {
         val normalizedX = (2.0f * screenPos.x) / width(0) - 1.0f
         val normalizedY = 1.0f - (2.0f * screenPos.y) / height(0)
 
-        val clipCoords = new Vector4f(normalizedX, normalizedY, -1.0f, 1.0f)
+        // クリップ座標のz値を0に設定し、w値を1.0に設定
+        val clipCoords = new Vector4f(-normalizedX, -normalizedY, -1.0f, 1.0f)
 
         val invProjMatrix = new Matrix4f(camera.getProjectionMatrix()).invert()
         val eyeCoords = invProjMatrix.transform(clipCoords)
-        eyeCoords.z = camera.getDistance()
+        eyeCoords.z = -1.0f
         eyeCoords.w = 0.0f
 
         val invViewMatrix = new Matrix4f(camera.getViewMatrix()).invert()
-        val worldCoords = invViewMatrix.transform(eyeCoords)
+        val rayWorld = invViewMatrix.transformDirection(new Vector3f(eyeCoords.x, eyeCoords.y, eyeCoords.z))
 
-        new Vector3f(worldCoords.x, worldCoords.y, worldCoords.z).add(camera.getXY())
+        // カメラの位置を取得
+        val cameraPos = new Vector3f(camera.getPosition())
+
+        // カメラからzDistanceの距離にある平面上の座標を計算
+        val scale = camera.getDistance() / rayWorld.z
+        val worldCoords = new Vector3f(
+            cameraPos.x + rayWorld.x * scale,
+            cameraPos.y + rayWorld.y * scale,
+            cameraPos.z + rayWorld.z * scale
+        )
+
+        worldCoords
     }
 }
