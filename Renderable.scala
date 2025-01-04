@@ -28,16 +28,9 @@ trait Renderable2D extends Renderable {
     def srt(scale: Float, rot: Float, tran: Vector3f): Renderable2D
 }
 
-abstract class Primitive() extends Renderable2D {
-
-    var vaoId_ = 0
-    var vboId_ = 0
-    var vertexShader_ = 0
-    var fragmentShader_ = 0
-    var shaderProgram_ = 0
-
-    // 頂点シェーダーコード
-    private val vertexShaderSource_ =
+object PrimitiveShader {
+    
+    val vertexShaderSource =
     """
     #version 330 core
     layout(location = 0) in vec3 aPos;
@@ -47,8 +40,7 @@ abstract class Primitive() extends Renderable2D {
     }
     """
 
-    // フラグメントシェーダーコード
-    private val fragmentShaderSource_ =
+    val fragmentShaderSource =
     """
     #version 330 core
     out vec4 FragColor;
@@ -57,17 +49,34 @@ abstract class Primitive() extends Renderable2D {
     }
     """
 
+    val vertexShader = compileShader(vertexShaderSource, GL20.GL_VERTEX_SHADER)
+    val fragmentShader = compileShader(fragmentShaderSource, GL20.GL_FRAGMENT_SHADER)
+
+    val shaderProgram = GL20.glCreateProgram()
+
+    private def compileShader(source: String, shaderType: Int): Int = {
+        val shader = GL20.glCreateShader(shaderType)
+        GL20.glShaderSource(shader, source)
+        GL20.glCompileShader(shader)
+
+        // コンパイルエラーの確認
+        if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
+            throw new RuntimeException(s"シェーダーのコンパイルに失敗: ${GL20.glGetShaderInfoLog(shader)}")
+        }
+        shader
+    }
+}
+
+abstract class Primitive() extends Renderable2D {
+
+    var vaoId_ = 0
+    var vboId_ = 0
+
     private val srtMatrix = new Matrix4f()
 
     def init(): Unit = {
         this.vaoId_ = GL30.glGenVertexArrays()
         this.vboId_ = GL15.glGenBuffers()
-
-        // シェーダープログラムの作成
-        this.vertexShader_ = compileShader(this.vertexShaderSource_, GL20.GL_VERTEX_SHADER)
-        this.fragmentShader_ = compileShader(this.fragmentShaderSource_, GL20.GL_FRAGMENT_SHADER)
-
-        this.shaderProgram_ = GL20.glCreateProgram()
     }
 
     private def compileShader(source: String, shaderType: Int): Int = {
@@ -83,14 +92,14 @@ abstract class Primitive() extends Renderable2D {
     }
 
     override def preRender(): Renderable = {
-        GL20.glAttachShader(shaderProgram_, vertexShader_)
-        GL20.glAttachShader(shaderProgram_, fragmentShader_)
-        GL20.glLinkProgram(shaderProgram_)
+        GL20.glAttachShader(PrimitiveShader.shaderProgram, PrimitiveShader.vertexShader)
+        GL20.glAttachShader(PrimitiveShader.shaderProgram, PrimitiveShader.fragmentShader)
+        GL20.glLinkProgram(PrimitiveShader.shaderProgram)
 
-        GL20.glUseProgram(shaderProgram_)
+        GL20.glUseProgram(PrimitiveShader.shaderProgram)
 
         // Pass the matrix to the shader
-        val srtMatrixLocation = GL20.glGetUniformLocation(shaderProgram_, "srtMatrix")
+        val srtMatrixLocation = GL20.glGetUniformLocation(PrimitiveShader.shaderProgram, "srtMatrix")
         val matrixBuffer = MemoryUtil.memAllocFloat(16)
         srtMatrix.get(matrixBuffer)
         GL20.glUniformMatrix4fv(srtMatrixLocation, false, matrixBuffer)
