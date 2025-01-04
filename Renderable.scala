@@ -31,6 +31,15 @@ class Camera() {
         projectionMatrix.perspective(fov, aspectRatio, near, far)
     }
 
+    def setProjectionMatrix(fov: Float, aspectRatio: Float, near: Float, far: Float): Camera = {
+        this.fov = fov
+        this.aspectRatio = aspectRatio
+        this.near = near
+        this.far = far
+        update()
+        this
+    }
+
     def translate(x: Float, y: Float): Camera = {
         println(s"Translate: $x, $y")
         position.add(x, y, 0)

@@ -95,6 +95,10 @@ object Main extends App {
             GLFW.glfwSetScrollCallback(window, (window, xoffset, yoffset) => {
                 camera.zoom(yoffset.toFloat)
             })
+            GLFW.glfwSetWindowSizeCallback(window, (window, width, height) => {
+                GL11.glViewport(0, 0, width, height)
+                camera.setProjectionMatrix(45.0f, width.toFloat / height.toFloat, 0.1f, 100.0f).update()
+            })
 
             primitive
             .srt(1.0f, 90.0f, new Vector3f(0.5f, 0.5f, 0.0f))
@@ -102,8 +106,11 @@ object Main extends App {
             .preRender()
             .render()
 
-            // 文字列を描画
-            new FontRenderer(0f, 0f, "HELLO WORLD\n1234567890 abcdef", 800, 600)
+            val width = Array(0)
+            val height = Array(0)
+            GLFW.glfwGetWindowSize(window, width, height)
+
+            new FontRenderer(0f, 0f, "HELLO WORLD\n1234567890 abcdef", width(0), height(0))
             .srt(2.0f,0.0f,new Vector3f(-1.0f, 0.0f, 0.0f))
             .camera(camera)
             .preRender()
@@ -131,7 +138,7 @@ object Main extends App {
 
         val invProjMatrix = new Matrix4f(camera.getProjectionMatrix()).invert()
         val eyeCoords = invProjMatrix.transform(clipCoords)
-        eyeCoords.z = -1.0f
+        eyeCoords.z = 0.0f
         eyeCoords.w = 0.0f
 
         val invViewMatrix = new Matrix4f(camera.getViewMatrix()).invert()
