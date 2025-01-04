@@ -92,7 +92,7 @@ object Main extends App {
                 prevCursorPos = cursorPos
             })
             GLFW.glfwSetScrollCallback(window, (window, xoffset, yoffset) => {
-                camera.zoom(yoffset.toFloat)
+                camera.zoom(yoffset.toFloat * 0.1f)
             })
             GLFW.glfwSetWindowSizeCallback(window, (window, width, height) => {
                 GL11.glViewport(0, 0, width, height)
@@ -110,7 +110,7 @@ object Main extends App {
             GLFW.glfwGetWindowSize(window, width, height)
 
             new FontRenderer(0f, 0f, "HELLO WORLD\n1234567890 abcdef", width(0), height(0))
-            .srt(new Vector3f(2.0f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, 0.0f), new Vector3f(-1.0f, 0.0f, 0.0f))
+            .srt(new Vector3f(1.5f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, 0.0f), new Vector3f(0.0f, 0.0f, 0.0f))
             .camera(camera)
             .preRender()
             .render()

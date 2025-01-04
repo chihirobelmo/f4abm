@@ -13,7 +13,7 @@ class Camera() {
     private val viewMatrix = new Matrix4f()
     private val projectionMatrix = new Matrix4f()
 
-    var position: Vector3f = new Vector3f(0.0f, 0.0f, 10.0f)
+    var position: Vector3f = new Vector3f(0.0f, 0.0f, 1.0f)
     var target: Vector3f = new Vector3f(0.0f, 0.0f, 0.0f)
     var up: Vector3f = new Vector3f(0.0f, 1.0f, 0.0f)
     var fov: Float = 45.0f
@@ -59,6 +59,15 @@ class Camera() {
 
     def getProjectionMatrix(): Matrix4f = {
         projectionMatrix
+    }
+
+    def calculateViewSize(aspectRatio: Float, distance: Float): (Float, Float) = {
+        
+        val fovRad = Math.toRadians(fov).toFloat
+        val height = 2.0f * distance * Math.tan(fovRad / 2.0f).toFloat
+        val width = height * aspectRatio
+
+        (width, height)
     }
 }
 
