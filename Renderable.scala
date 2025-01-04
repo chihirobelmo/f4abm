@@ -267,11 +267,11 @@ object FontData {
 
 class FontRenderer(x: Float, y: Float, str: String, windowWidth: Int, windowHeight: Int) extends Primitive() {
 
-    var x_ = x
-    var y_ = y
-    var str_ = str
-    var windowWidth_ = windowWidth
-    var windowHeight_ = windowHeight
+    val startX_ = x
+    val startY_ = y
+    val str_ = str
+    val windowWidth_ = windowWidth
+    val windowHeight_ = windowHeight
 
     private def drawChar(x: Float, y: Float, c: Char, windowWidth: Int, windowHeight: Int): Unit = {
         val index = c - ' '
@@ -296,12 +296,20 @@ class FontRenderer(x: Float, y: Float, str: String, windowWidth: Int, windowHeig
     }
 
     override def render(): Renderable = {
+        var x_ = startX_
+        var y_ = startY_
         for (i <- str_.indices) {
+            if (str_(i) == '\n') {
+                x_ = startX_ - FontData.widthPx // why ?
+                y_ -= FontData.heightPx
+            }
             drawChar(
-                windowWidth_ / 2 + x_ + i * FontData.widthPx, 
-                windowHeight_ / 2 + y_, str_(i), 
+                windowWidth_ / 2 + x_, 
+                windowHeight_ / 2 + y_, 
+                str_(i), 
                 windowWidth_, 
                 windowHeight_)
+            x_ += FontData.widthPx
         }
 
         this
