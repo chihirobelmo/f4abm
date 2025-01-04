@@ -22,10 +22,7 @@ trait Renderable {
     def preRender(): Renderable
     def render(): Renderable
     def end(): Renderable
-}
-
-trait Renderable2D extends Renderable {
-    def srt(scale: Float, rot: Float, tran: Vector3f): Renderable2D
+    def srt(scale: Float, rot: Float, tran: Vector3f): Renderable
 }
 
 object PrimitiveShader {
@@ -67,28 +64,16 @@ object PrimitiveShader {
     }
 }
 
-abstract class Primitive() extends Renderable2D {
+abstract class Primitive() extends Renderable {
 
     var vaoId_ = 0
     var vboId_ = 0
 
-    private val srtMatrix = new Matrix4f()
+    val srtMatrix = new Matrix4f()
 
     def init(): Unit = {
         this.vaoId_ = GL30.glGenVertexArrays()
         this.vboId_ = GL15.glGenBuffers()
-    }
-
-    private def compileShader(source: String, shaderType: Int): Int = {
-        val shader = GL20.glCreateShader(shaderType)
-        GL20.glShaderSource(shader, source)
-        GL20.glCompileShader(shader)
-
-        // コンパイルエラーの確認
-        if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
-            throw new RuntimeException(s"シェーダーのコンパイルに失敗: ${GL20.glGetShaderInfoLog(shader)}")
-        }
-        shader
     }
 
     override def preRender(): Renderable = {
@@ -115,7 +100,7 @@ abstract class Primitive() extends Renderable2D {
         this
     }
 
-    override def srt(scale: Float, rot: Float, tran: Vector3f): Renderable2D = {
+    override def srt(scale: Float, rot: Float, tran: Vector3f): Renderable = {
         val scaleMatrix = new Matrix4f().scaling(scale, scale, scale)
         val rotationMatrix = new Matrix4f().rotateZ(Math.toRadians(rot).toFloat)
         val translationMatrix = new Matrix4f().translation(tran)
