@@ -12,14 +12,24 @@ class Camera() {
     private val viewMatrix = new Matrix4f()
     private val projectionMatrix = new Matrix4f()
 
-    def getViewMatrix(position: Vector3f, target: Vector3f, up: Vector3f): Matrix4f = {
+    def setViewMatrix(position: Vector3f, target: Vector3f, up: Vector3f): Camera = {
         viewMatrix.identity()
         viewMatrix.lookAt(position, target, up)
+        this
     }
 
-    def getProjectionMatrix(fov: Float, aspectRatio: Float, near: Float, far: Float): Matrix4f = {
+    def setProjectionMatrix(fov: Float, aspectRatio: Float, near: Float, far: Float): Camera = {
         projectionMatrix.identity()
         projectionMatrix.perspective(fov, aspectRatio, near, far)
+        this
+    }
+
+    def getViewMatrix(): Matrix4f = {
+        viewMatrix
+    }
+
+    def getProjectionMatrix(): Matrix4f = {
+        projectionMatrix
     }
 }
 
@@ -39,6 +49,7 @@ trait Renderable {
     def render(): Renderable
     def end(): Renderable
     def srt(scale: Float, rot: Float, tran: Vector3f): Renderable
+    def camera(camera: Camera): Renderable
 }
 
 object PrimitiveShader {
@@ -50,6 +61,8 @@ object PrimitiveShader {
     layout(location = 1) in vec3 aColor;
     out vec3 vertexColor;
     uniform mat4 srtMatrix;
+    uniform mat4 viewMatrix;
+    uniform mat4 projMatrix;
     void main() {
         gl_Position = srtMatrix * vec4(aPos, 1.0);
         vertexColor = aColor;
@@ -83,7 +96,7 @@ object PrimitiveShader {
         shader
     }
 
-    def preRender(vaoId: Int, vboId: Int, srtMatrix: Matrix4f, vertices: Array[Float]) {
+    def use(vaoId: Int, vboId: Int, srtMatrix: Matrix4f, camera: Camera, vertices: Array[Float]) {
 
         GL30.glBindVertexArray(vaoId)
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vboId)
@@ -104,66 +117,24 @@ object PrimitiveShader {
 
         GL20.glUseProgram(shaderProgram)
 
+
         val srtMatrixLocation = GL20.glGetUniformLocation(shaderProgram, "srtMatrix")
         val matrixBuffer = MemoryUtil.memAllocFloat(16)
         srtMatrix.get(matrixBuffer)
         GL20.glUniformMatrix4fv(srtMatrixLocation, false, matrixBuffer)
         MemoryUtil.memFree(matrixBuffer)
-    }
-}
 
-class ShaderProgram(vertexShaderSource: String, fragmentShaderSource: String) {
+        val viewMatrixLocation = GL20.glGetUniformLocation(shaderProgram, "viewMatrix")
+        val viewMatrixBuffer = MemoryUtil.memAllocFloat(16)
+        camera.getViewMatrix().get(viewMatrixBuffer)
+        GL20.glUniformMatrix4fv(viewMatrixLocation, false, viewMatrixBuffer)
+        MemoryUtil.memFree(viewMatrixBuffer)
 
-    val vertexShader = compileShader(vertexShaderSource, GL20.GL_VERTEX_SHADER)
-    val fragmentShader = compileShader(fragmentShaderSource, GL20.GL_FRAGMENT_SHADER)
-
-    val programId = GL20.glCreateProgram()
-
-    private def compileShader(source: String, shaderType: Int): Int = {
-        val shader = GL20.glCreateShader(shaderType)
-        GL20.glShaderSource(shader, source)
-        GL20.glCompileShader(shader)
-
-        // コンパイルエラーの確認
-        if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
-            throw new RuntimeException(s"シェーダーのコンパイルに失敗: ${GL20.glGetShaderInfoLog(shader)}")
-        }
-        shader
-    }
-
-    def setUniform(name: String, matrix: Matrix4f): Unit = {
-        val location = GL20.glGetUniformLocation(programId, name)
-        val stack = MemoryStack.stackPush()
-        try {
-            val buffer = stack.mallocFloat(16)
-            matrix.get(buffer)
-            GL20.glUniformMatrix4fv(location, false, buffer)
-        } finally {
-            stack.pop()
-        }
-    }
-
-    def setSrtMatrix(matrix: Matrix4f): Unit = {
-        val srtMatrixLocation = GL20.glGetUniformLocation(programId, "srtMatrix")
-        val matrixBuffer = MemoryUtil.memAllocFloat(16)
-        matrix.get(matrixBuffer)
-        GL20.glUniformMatrix4fv(srtMatrixLocation, false, matrixBuffer)
-        MemoryUtil.memFree(matrixBuffer)
-    }
-
-    def use(): Unit = {
-        GL20.glAttachShader(PrimitiveShader.shaderProgram, PrimitiveShader.vertexShader)
-        GL20.glAttachShader(PrimitiveShader.shaderProgram, PrimitiveShader.fragmentShader)
-        GL20.glLinkProgram(PrimitiveShader.shaderProgram)
-        GL20.glUseProgram(programId)
-    }
-
-    def stop(): Unit = {
-        GL20.glUseProgram(0)
-    }
-
-    def cleanup(): Unit = {
-        GL20.glDeleteProgram(programId)
+        val projMatrixLocation = GL20.glGetUniformLocation(shaderProgram, "projMatrix")
+        val projMatrixBuffer = MemoryUtil.memAllocFloat(16)
+        camera.getProjectionMatrix().get(projMatrixBuffer)
+        GL20.glUniformMatrix4fv(projMatrixLocation, false, projMatrixBuffer)
+        MemoryUtil.memFree(projMatrixBuffer)
     }
 }
 
@@ -174,6 +145,8 @@ abstract class Primitive() extends Renderable {
 
     val srtMatrix = new Matrix4f()
 
+    var camera = new Camera()
+
     val vertices: Array[Float] = Array(
         -0.5f, -0.5f, +0.0f, 1.0f, 0.0f, 1.0f, // 左下 白
         +0.5f, -0.5f, +0.0f, 1.0f, 0.0f, 1.0f, // 右下 白
@@ -182,7 +155,7 @@ abstract class Primitive() extends Renderable {
 
     override def preRender(): Renderable = {
 
-        PrimitiveShader.preRender(this.vaoId_, this.vboId_, this.srtMatrix, this.vertices)
+        PrimitiveShader.use(this.vaoId_, this.vboId_, this.srtMatrix, this.camera, this.vertices)
 
         this
     }
@@ -202,6 +175,11 @@ abstract class Primitive() extends Renderable {
 
         this
     }
+
+    override def camera(camera: Camera): Renderable = {
+        this.camera = camera
+        this
+    }
 }
 
 class Triangle() extends Primitive() {
@@ -215,7 +193,7 @@ class Triangle() extends Primitive() {
 
     override def render(): Renderable = {
         GL30.glBindVertexArray(vaoId_)
-        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, 3)
+        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, vertices.length / 6)
         GL30.glBindVertexArray(0)
 
         this

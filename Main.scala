@@ -1,4 +1,4 @@
-import com.example.render.{Renderable, Triangle, AirTrack, FontRenderer}
+import com.example.render.{Renderable, Triangle, AirTrack, FontRenderer, Camera}
 import org.lwjgl.opengl._
 import org.lwjgl._
 import org.lwjgl.glfw._
@@ -40,6 +40,10 @@ object Main extends App {
         trttClient.run()
     }
 
+    val camera = new Camera()
+    .setViewMatrix(new Vector3f(0.0f, 0.0f, 3.0f), new Vector3f(0.0f, 0.0f, 0.0f), new Vector3f(0.0f, 1.0f, 0.0f))
+    .setProjectionMatrix(45.0f, 800.0f / 600.0f, 0.1f, 100.0f)
+
     runGame()
 
     GLFW.glfwDestroyWindow(window)
@@ -54,10 +58,18 @@ object Main extends App {
             GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
 
-            primitive.srt(1.0f, 45.0f, new Vector3f(0.5f, 0.5f, 0.0f)).preRender().render()
+            primitive
+            .srt(1.0f, 90.0f, new Vector3f(0.5f, 0.5f, 0.0f))
+            .camera(camera)
+            .preRender()
+            .render()
 
             // 文字列を描画
-            new FontRenderer(0f, 0f, "HELLO WORLD\n1234567890 abcdef", 800, 600).srt(2.0f,0.0f,new Vector3f(-1.0f, 0.0f, 0.0f)).preRender().render()
+            new FontRenderer(0f, 0f, "HELLO WORLD\n1234567890 abcdef", 800, 600)
+            .srt(2.0f,0.0f,new Vector3f(-1.0f, 0.0f, 0.0f))
+            .camera(camera)
+            .preRender()
+            .render()
 
             GLFW.glfwSwapBuffers(window)
             GLFW.glfwPollEvents()
