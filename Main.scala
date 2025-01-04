@@ -44,6 +44,7 @@ object Main extends App {
     val camera = new Camera()
     var shouldMoveCamera = false
     var prevCursor: Vector2f = new Vector2f(0.0f, 0.0f)
+    var prevTimeMs = GLFW.glfwGetTime()
 
     runGame()
 
@@ -55,6 +56,8 @@ object Main extends App {
 
         // ループ
         while (!GLFW.glfwWindowShouldClose(window)) {
+
+            val frameTimeMs = GLFW.glfwGetTime() - prevTimeMs
 
             GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
@@ -84,9 +87,12 @@ object Main extends App {
             })
             GLFW.glfwSetCursorPosCallback(window, (window, xpos, ypos) => {
                 if (shouldMoveCamera) {
-                    camera.translate(prevCursor.x - xpos.toFloat, prevCursor.y - ypos.toFloat)
+                    camera.translate((prevCursor.x - xpos.toFloat) * 10.0f * frameTimeMs.toFloat, +(prevCursor.y - ypos.toFloat) * 10.0f * frameTimeMs.toFloat)
                 }
                 prevCursor = new Vector2f(xpos.toFloat, ypos.toFloat)
+            })
+            GLFW.glfwSetScrollCallback(window, (window, xoffset, yoffset) => {
+                camera.zoom(yoffset.toFloat)
             })
 
             primitive
@@ -104,6 +110,8 @@ object Main extends App {
 
             GLFW.glfwSwapBuffers(window)
             GLFW.glfwPollEvents()
+
+            prevTimeMs = GLFW.glfwGetTime()
         }
 
         // 終了処理
