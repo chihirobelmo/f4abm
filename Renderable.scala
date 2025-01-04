@@ -61,13 +61,35 @@ class Camera() {
         projectionMatrix
     }
 
-    def calculateViewSize(aspectRatio: Float, distance: Float): (Float, Float) = {
+    def getDistance(): Float = {
+        position.z
+    }
+
+    def getXY(): Vector3f = {
+        new Vector3f(position.x, position.y, 0)
+    }
+
+    def calculateViewSize(window: Long): Vector3f = {
+
+        val distance = getDistance()
+
+        val w = Array(0)
+        val h = Array(0)
+        GLFW.glfwGetWindowSize(window, w, h)
+
+        val aspectRatio = w(0).toFloat / h(0).toFloat
         
         val fovRad = Math.toRadians(fov).toFloat
         val height = 2.0f * distance * Math.tan(fovRad / 2.0f).toFloat
         val width = height * aspectRatio
 
-        (width, height)
+        new Vector3f(width, height, 0)
+    }
+
+    def fixedPoint(window: Long, xyz: Vector3f): Vector3f = {
+        calculateViewSize(window)
+        .mul(xyz.x, xyz.y, xyz.z)
+        .add(new Vector3f(position.x, position.y, 0))
     }
 }
 
@@ -381,13 +403,17 @@ object FontData {
     )
 }
 
-class FontRenderer(x: Float, y: Float, str: String, windowWidth: Int, windowHeight: Int) extends Primitive() {
+class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primitive() {
+
+    val width = Array(0)
+    val height = Array(0)
+    GLFW.glfwGetWindowSize(window, width, height)
 
     val startX_ = x
     val startY_ = y
     val str_ = str
-    val windowWidth_ = windowWidth
-    val windowHeight_ = windowHeight
+    val windowWidth_ = width(0)
+    val windowHeight_ = height(0)
 
     private def drawChar(x: Float, y: Float, c: Char, windowWidth: Int, windowHeight: Int): Unit = {
         val index = c - ' '

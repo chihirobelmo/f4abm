@@ -41,6 +41,8 @@ object Main extends App {
     }
 
     val camera = new Camera()
+    .setProjectionMatrix(45.0f, 800.0f / 600.0f, 0.1f, 100.0f)
+
     var shouldMoveCamera = false
     var prevCursorPos: Vector3f = new Vector3f(0.0f, 0.0f, 0.0f)
     var prevTimeMs = GLFW.glfwGetTime()
@@ -109,8 +111,10 @@ object Main extends App {
             val height = Array(0)
             GLFW.glfwGetWindowSize(window, width, height)
 
-            new FontRenderer(0f, 0f, "HELLO WORLD\n1234567890 abcdef", width(0), height(0))
-            .srt(new Vector3f(1.5f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, 0.0f), new Vector3f(0.0f, 0.0f, 0.0f))
+            val xy = camera.getXY()
+
+            new FontRenderer(window, 0f, 0f, "HELLO WORLD\n1234567890 abcdef")
+            .srt(new Vector3f(1.5f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, 0.0f), camera.fixedPoint(window, new Vector3f(-0.50f, -0.50f, 0.0f)))
             .camera(camera)
             .preRender()
             .render()
