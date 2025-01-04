@@ -77,7 +77,7 @@ trait Renderable {
     def preRender(): Renderable
     def render(): Renderable
     def end(): Renderable
-    def srt(scale: Float, rot: Float, tran: Vector3f): Renderable
+    def srt(scale: Vector3f, rot: Vector3f, tran: Vector3f): Renderable
     def camera(camera: Camera): Renderable
 }
 
@@ -196,9 +196,9 @@ abstract class Primitive() extends Renderable {
         this
     }
 
-    override def srt(scale: Float, rot: Float, tran: Vector3f): Renderable = {
-        val scaleMatrix = new Matrix4f().scaling(scale, scale, scale)
-        val rotationMatrix = new Matrix4f().rotateZ(Math.toRadians(rot).toFloat)
+    override def srt(scale: Vector3f, rot: Vector3f, tran: Vector3f): Renderable = {
+        val scaleMatrix = new Matrix4f().scaling(scale)
+        val rotationMatrix = new Matrix4f().rotateX(rot.x).rotateY(rot.y).rotateZ(rot.z)
         val translationMatrix = new Matrix4f().translation(tran)
         srtMatrix.identity().mul(translationMatrix).mul(rotationMatrix).mul(scaleMatrix)
 

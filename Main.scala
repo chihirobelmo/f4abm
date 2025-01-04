@@ -100,7 +100,7 @@ object Main extends App {
             })
 
             primitive
-            .srt(1.0f, 90.0f, new Vector3f(0.5f, 0.5f, 0.0f))
+            .srt(new Vector3f(1.0f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, Math.toRadians(45.0).toFloat), new Vector3f(0.5f, 0.5f, 0.0f))
             .camera(camera)
             .preRender()
             .render()
@@ -110,7 +110,7 @@ object Main extends App {
             GLFW.glfwGetWindowSize(window, width, height)
 
             new FontRenderer(0f, 0f, "HELLO WORLD\n1234567890 abcdef", width(0), height(0))
-            .srt(2.0f,0.0f,new Vector3f(-1.0f, 0.0f, 0.0f))
+            .srt(new Vector3f(2.0f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, 0.0f), new Vector3f(-1.0f, 0.0f, 0.0f))
             .camera(camera)
             .preRender()
             .render()
