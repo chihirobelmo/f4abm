@@ -44,6 +44,7 @@ object Main extends App {
     .setProjectionMatrix(45.0f, 800.0f / 600.0f, 0.1f, 100.0f)
 
     var shouldMoveCamera = false
+    var cursorPosPx: Vector2f = new Vector2f(0.0f, 0.0f)
     var prevCursorPos: Vector3f = new Vector3f(0.0f, 0.0f, 0.0f)
     var prevTimeMs = GLFW.glfwGetTime()
 
@@ -87,6 +88,7 @@ object Main extends App {
                 }
             })
             GLFW.glfwSetCursorPosCallback(window, (window, xpos, ypos) => {
+                cursorPosPx = new Vector2f(xpos.toFloat, ypos.toFloat)
                 val cursorPos = screenToWorld(new Vector2f(xpos.toFloat, ypos.toFloat), window, camera)
                 if (shouldMoveCamera) {
                     camera.translate((prevCursorPos.x - cursorPos.x.toFloat), +(prevCursorPos.y - cursorPos.y.toFloat))
@@ -111,9 +113,9 @@ object Main extends App {
             val height = Array(0)
             GLFW.glfwGetWindowSize(window, width, height)
 
-            val xy = camera.getXY()
+            val cursorPos = screenToWorld(new Vector2f(cursorPosPx.x.toFloat, cursorPosPx.y.toFloat), window, camera)
 
-            new FontRenderer(window, 0f, 0f, "HELLO WORLD\n1234567890 abcdef")
+            new FontRenderer(window, 0f, 0f, s"$cursorPos")
             .srt(new Vector3f(1.0f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, 0.0f), camera.fixedPoint(window, new Vector3f(-0.50f, -0.50f, 0.0f)))
             .camera(camera)
             .preRender()
@@ -141,7 +143,7 @@ object Main extends App {
 
         val invProjMatrix = new Matrix4f(camera.getProjectionMatrix()).invert()
         val eyeCoords = invProjMatrix.transform(clipCoords)
-        eyeCoords.z = 0.0f
+        eyeCoords.z = camera.getDistance()
         eyeCoords.w = 0.0f
 
         val invViewMatrix = new Matrix4f(camera.getViewMatrix()).invert()

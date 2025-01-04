@@ -419,7 +419,7 @@ class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primit
     val str_ = str
     val windowWidth_ = width(0)
     val windowHeight_ = height(0)
-    val aspectRatio = windowWidth_.toFloat / windowHeight_.toFloat
+    val aspectRatio_ = windowWidth_.toFloat / windowHeight_.toFloat
 
     private def drawChar(x: Float, y: Float, c: Char): Unit = {
         val index = c - ' '
@@ -432,9 +432,10 @@ class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primit
         for (i <- 0 until FontData.heightPx) {
             for (j <- 0 until FontData.widthPx) {
                 if ((data(FontData.heightPx - 1 - i) & (1 << (FontData.widthPx - 1 - j))) != 0) {
-                    val xPos = aspectRatio * ((x + j) / windowWidth_ * 2 - 1)
+
+                    val xPos = aspectRatio_ * ((x + j) / windowWidth_ * 2 - 1)
                     val yPos = (y + i) / windowHeight_ * 2 - 1
-                    val xPixelSize = aspectRatio * 2.0f / windowWidth_.toFloat
+                    val xPixelSize = aspectRatio_ * 2.0f / windowWidth_.toFloat
                     val yPixelSize = 2.0f / windowHeight_.toFloat
                     val color = Array(1.0f, 1.0f, 1.0f)
 
