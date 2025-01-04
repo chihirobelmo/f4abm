@@ -4,6 +4,8 @@ version := "0.1"
 
 scalaVersion := "2.13.12"
 
+fork in run := true
+
 libraryDependencies ++= Seq(
   "org.joml" % "joml" % "1.10.5",
   "org.lwjgl" % "lwjgl" % "3.3.1",

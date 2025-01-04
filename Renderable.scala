@@ -19,7 +19,6 @@ object Util {
 }
 
 trait Renderable {
-    def drawString(x: Float, y: Float, str: String, windowWidth: Int, windowHeight: Int): Unit
     def preRender(): Renderable
     def render(): Renderable
     def end(): Renderable
@@ -114,10 +113,6 @@ abstract class Primitive() extends Renderable2D {
         srtMatrix.identity().mul(translationMatrix).mul(rotationMatrix).mul(scaleMatrix)
 
         this
-    }
-
-    override def drawString(x: Float, y: Float, str: String, windowWidth: Int, windowHeight: Int): Unit = {
-        0
     }
 }
 
@@ -276,9 +271,15 @@ object FontData {
     )
 }
 
-class FontRenderer() extends Primitive() {
+class FontRenderer(x: Float, y: Float, str: String, windowWidth: Int, windowHeight: Int) extends Primitive() {
 
-    def drawChar(x: Float, y: Float, c: Char, windowWidth: Int, windowHeight: Int): Unit = {
+    var x_ = x
+    var y_ = y
+    var str_ = str
+    var windowWidth_ = windowWidth
+    var windowHeight_ = windowHeight
+
+    private def drawChar(x: Float, y: Float, c: Char, windowWidth: Int, windowHeight: Int): Unit = {
         val index = c - ' '
         if (index < 0 || index >= FontData.fontData.length) return
 
@@ -288,25 +289,23 @@ class FontRenderer() extends Primitive() {
         for (i <- 0 until FontData.fontHeight) {
             for (j <- 0 until FontData.fontWidth) {
                 if ((data(FontData.fontHeight - 1 - i) & (1 << (FontData.fontWidth - 1 - j))) != 0) {
-                    val xPos = (x + j) / windowWidth * 2 - 1
-                    val yPos = (y + i) / windowHeight * 2 - 1
+                    val xPos = (x + j) / windowWidth_ * 2 - 1
+                    val yPos = (y + i) / windowHeight_ * 2 - 1
                     GL11.glVertex2f(xPos, yPos)
-                    GL11.glVertex2f(xPos + 2.0f / windowWidth, yPos)
-                    GL11.glVertex2f(xPos + 2.0f / windowWidth, yPos + 2.0f / windowHeight)
-                    GL11.glVertex2f(xPos, yPos + 2.0f / windowHeight)
+                    GL11.glVertex2f(xPos + 2.0f / windowWidth_, yPos)
+                    GL11.glVertex2f(xPos + 2.0f / windowWidth_, yPos + 2.0f / windowHeight_)
+                    GL11.glVertex2f(xPos, yPos + 2.0f / windowHeight_)
                 }
             }
         }
         GL11.glEnd()
     }
 
-    override def drawString(x: Float, y: Float, str: String, windowWidth: Int, windowHeight: Int): Unit = {
-        for (i <- str.indices) {
-        drawChar(x + i * FontData.fontWidth, y, str(i), windowWidth, windowHeight)
-        }
-    }
-
     override def render(): Renderable = {
+        for (i <- str_.indices) {
+            drawChar(x_ + i * FontData.fontWidth, y_, str_(i), windowWidth_, windowHeight_)
+        }
+
         this
     }
 }
