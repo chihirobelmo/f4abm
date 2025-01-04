@@ -13,7 +13,7 @@ class Camera() {
     private val viewMatrix = new Matrix4f()
     private val projectionMatrix = new Matrix4f()
 
-    var position: Vector3f = new Vector3f(0.0f, 0.0f, 1.0f)
+    var position: Vector3f = new Vector3f(0.0f, 0.0f, 10.0f)
     var target: Vector3f = new Vector3f(0.0f, 0.0f, 0.0f)
     var up: Vector3f = new Vector3f(0.0f, 1.0f, 0.0f)
     var fov: Float = 45.0f
@@ -29,6 +29,19 @@ class Camera() {
 
         projectionMatrix.identity()
         projectionMatrix.perspective(fov, aspectRatio, near, far)
+    }
+
+    def translate(x: Float, y: Float): Camera = {
+        position.add(x, y, 0)
+        target.add(x, y, 0)
+        update()
+        this
+    }
+
+    def zoom(z: Float): Camera = {
+        position.add(0, 0, z)
+        update()
+        this
     }
 
     def getViewMatrix(): Matrix4f = {

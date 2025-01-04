@@ -7,6 +7,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable.HashMap
 import org.joml.Vector3f
+import org.joml.Vector2f
 
 object Main extends App {
 
@@ -41,6 +42,8 @@ object Main extends App {
     }
 
     val camera = new Camera()
+    var shouldMoveCamera = false
+    var prevCursor: Vector2f = new Vector2f(0.0f, 0.0f)
 
     runGame()
 
@@ -55,6 +58,36 @@ object Main extends App {
 
             GL11.glClearColor(0.1f, 0.2f, 0.3f, 0.0f)
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT)
+
+            GLFW.glfwSetKeyCallback(window, (window, key, scancode, action, mods) => {
+                action match {
+                    case GLFW.GLFW_PRESS => {
+                        println(s"キー $key が押されました")
+                        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_ESCAPE) == GLFW.GLFW_PRESS) {
+                            GLFW.glfwSetWindowShouldClose(window, true)
+                        }
+                    }
+                    case GLFW.GLFW_RELEASE => println(s"キー $key が離されました")
+                    case _ =>
+                }
+            })
+            GLFW.glfwSetMouseButtonCallback(window, (window, button, action, mods) => {
+                action match {
+                    case GLFW.GLFW_PRESS => {
+                        shouldMoveCamera = true
+                    }
+                    case GLFW.GLFW_RELEASE => {
+                        shouldMoveCamera = false
+                    }
+                    case _ =>
+                }
+            })
+            GLFW.glfwSetCursorPosCallback(window, (window, xpos, ypos) => {
+                if (shouldMoveCamera) {
+                    camera.translate(prevCursor.x - xpos.toFloat, prevCursor.y - ypos.toFloat)
+                }
+                prevCursor = new Vector2f(xpos.toFloat, ypos.toFloat)
+            })
 
             primitive
             .srt(1.0f, 90.0f, new Vector3f(0.5f, 0.5f, 0.0f))
