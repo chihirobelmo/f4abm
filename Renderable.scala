@@ -419,8 +419,9 @@ class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primit
     val str_ = str
     val windowWidth_ = width(0)
     val windowHeight_ = height(0)
+    val aspectRatio = windowWidth_.toFloat / windowHeight_.toFloat
 
-    private def drawChar(x: Float, y: Float, c: Char, windowWidth: Int, windowHeight: Int): Unit = {
+    private def drawChar(x: Float, y: Float, c: Char): Unit = {
         val index = c - ' '
         if (index < 0 || index >= FontData.fontData.length) return
 
@@ -431,8 +432,10 @@ class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primit
         for (i <- 0 until FontData.heightPx) {
             for (j <- 0 until FontData.widthPx) {
                 if ((data(FontData.heightPx - 1 - i) & (1 << (FontData.widthPx - 1 - j))) != 0) {
-                    val xPos = (x + j) / windowWidth_ * 2 - 1
+                    val xPos = aspectRatio * ((x + j) / windowWidth_ * 2 - 1)
                     val yPos = (y + i) / windowHeight_ * 2 - 1
+                    val xPixelSize = aspectRatio * 2.0f / windowWidth_.toFloat
+                    val yPixelSize = 2.0f / windowHeight_.toFloat
                     val color = Array(1.0f, 1.0f, 1.0f)
 
                     // First triangle
@@ -444,7 +447,7 @@ class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primit
                     vertices(vertexIndex + 5) = color(2)
                     vertexIndex += 6
 
-                    vertices(vertexIndex) = xPos + 2.0f / windowWidth
+                    vertices(vertexIndex) = xPos + xPixelSize
                     vertices(vertexIndex + 1) = yPos
                     vertices(vertexIndex + 2) = 0.0f
                     vertices(vertexIndex + 3) = color(0)
@@ -453,7 +456,7 @@ class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primit
                     vertexIndex += 6
 
                     vertices(vertexIndex) = xPos
-                    vertices(vertexIndex + 1) = yPos + 2.0f / windowHeight
+                    vertices(vertexIndex + 1) = yPos + yPixelSize
                     vertices(vertexIndex + 2) = 0.0f
                     vertices(vertexIndex + 3) = color(0)
                     vertices(vertexIndex + 4) = color(1)
@@ -461,7 +464,7 @@ class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primit
                     vertexIndex += 6
 
                     // Second triangle
-                    vertices(vertexIndex) = xPos + 2.0f / windowWidth
+                    vertices(vertexIndex) = xPos + xPixelSize
                     vertices(vertexIndex + 1) = yPos
                     vertices(vertexIndex + 2) = 0.0f
                     vertices(vertexIndex + 3) = color(0)
@@ -469,8 +472,8 @@ class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primit
                     vertices(vertexIndex + 5) = color(2)
                     vertexIndex += 6
 
-                    vertices(vertexIndex) = xPos + 2.0f / windowWidth
-                    vertices(vertexIndex + 1) = yPos + 2.0f / windowHeight
+                    vertices(vertexIndex) = xPos + xPixelSize
+                    vertices(vertexIndex + 1) = yPos + yPixelSize
                     vertices(vertexIndex + 2) = 0.0f
                     vertices(vertexIndex + 3) = color(0)
                     vertices(vertexIndex + 4) = color(1)
@@ -478,7 +481,7 @@ class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primit
                     vertexIndex += 6
 
                     vertices(vertexIndex) = xPos
-                    vertices(vertexIndex + 1) = yPos + 2.0f / windowHeight
+                    vertices(vertexIndex + 1) = yPos + yPixelSize
                     vertices(vertexIndex + 2) = 0.0f
                     vertices(vertexIndex + 3) = color(0)
                     vertices(vertexIndex + 4) = color(1)
@@ -519,9 +522,7 @@ class FontRenderer(window: Long, x: Float, y: Float, str: String) extends Primit
             drawChar(
                 windowWidth_ / 2 + x_, 
                 windowHeight_ / 2 + y_, 
-                str_(i), 
-                windowWidth_, 
-                windowHeight_)
+                str_(i))
             x_ += FontData.widthPx
         }
 

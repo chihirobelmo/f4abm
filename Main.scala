@@ -114,7 +114,7 @@ object Main extends App {
             val xy = camera.getXY()
 
             new FontRenderer(window, 0f, 0f, "HELLO WORLD\n1234567890 abcdef")
-            .srt(new Vector3f(1.5f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, 0.0f), camera.fixedPoint(window, new Vector3f(-0.50f, -0.50f, 0.0f)))
+            .srt(new Vector3f(1.0f, 1.0f, 1.0f), new Vector3f(0.0f, 0.0f, 0.0f), camera.fixedPoint(window, new Vector3f(-0.50f, -0.50f, 0.0f)))
             .camera(camera)
             .preRender()
             .render()
