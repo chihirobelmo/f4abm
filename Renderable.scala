@@ -198,8 +198,8 @@ val A: Array[Int] = Array(
 
 */
 object FontData {
-    val fontWidth = 8
-    val fontHeight = 8
+    val widthPx = 8
+    val heightPx = 8
 
     // 簡単なビットマップフォントデータ（例として8x8の固定幅フォント）
     val fontData: Array[Array[Int]] = Array(
@@ -280,9 +280,9 @@ class FontRenderer(x: Float, y: Float, str: String, windowWidth: Int, windowHeig
         val data = FontData.fontData(index)
         GL11.glColor3f(1.0f, 1.0f, 1.0f)
         GL11.glBegin(GL11.GL_QUADS)
-        for (i <- 0 until FontData.fontHeight) {
-            for (j <- 0 until FontData.fontWidth) {
-                if ((data(FontData.fontHeight - 1 - i) & (1 << (FontData.fontWidth - 1 - j))) != 0) {
+        for (i <- 0 until FontData.heightPx) {
+            for (j <- 0 until FontData.widthPx) {
+                if ((data(FontData.heightPx - 1 - i) & (1 << (FontData.widthPx - 1 - j))) != 0) {
                     val xPos = (x + j) / windowWidth_ * 2 - 1
                     val yPos = (y + i) / windowHeight_ * 2 - 1
                     GL11.glVertex2f(xPos, yPos)
@@ -297,7 +297,11 @@ class FontRenderer(x: Float, y: Float, str: String, windowWidth: Int, windowHeig
 
     override def render(): Renderable = {
         for (i <- str_.indices) {
-            drawChar(x_ + i * FontData.fontWidth, y_, str_(i), windowWidth_, windowHeight_)
+            drawChar(
+                windowWidth_ / 2 + x_ + i * FontData.widthPx, 
+                windowHeight_ / 2 + y_, str_(i), 
+                windowWidth_, 
+                windowHeight_)
         }
 
         this
