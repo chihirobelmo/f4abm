@@ -41,7 +41,6 @@ class Camera() {
     }
 
     def translate(x: Float, y: Float): Camera = {
-        println(s"Translate: $x, $y")
         position.add(x, y, 0)
         target.add(x, y, 0)
         update()

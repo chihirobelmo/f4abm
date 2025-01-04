@@ -42,7 +42,7 @@ object Main extends App {
 
     val camera = new Camera()
     var shouldMoveCamera = false
-    var prevCursor: Vector2f = new Vector2f(0.0f, 0.0f)
+    var prevCursorPos: Vector3f = new Vector3f(0.0f, 0.0f, 0.0f)
     var prevTimeMs = GLFW.glfwGetTime()
 
     runGame()
@@ -77,8 +77,6 @@ object Main extends App {
                 action match {
                     case GLFW.GLFW_PRESS => {
                         shouldMoveCamera = true
-                        val worldPos = screenToWorld(prevCursor, window, camera)
-                        println(s"クリック位置: $worldPos")
                     }
                     case GLFW.GLFW_RELEASE => {
                         shouldMoveCamera = false
@@ -87,10 +85,11 @@ object Main extends App {
                 }
             })
             GLFW.glfwSetCursorPosCallback(window, (window, xpos, ypos) => {
+                val cursorPos = screenToWorld(new Vector2f(xpos.toFloat, ypos.toFloat), window, camera)
                 if (shouldMoveCamera) {
-                    camera.translate((prevCursor.x - xpos.toFloat) * 10.0f * frameTimeMs.toFloat, +(prevCursor.y - ypos.toFloat) * 10.0f * frameTimeMs.toFloat)
+                    camera.translate((prevCursorPos.x - cursorPos.x.toFloat), +(prevCursorPos.y - cursorPos.y.toFloat))
                 }
-                prevCursor = new Vector2f(xpos.toFloat, ypos.toFloat)
+                prevCursorPos = cursorPos
             })
             GLFW.glfwSetScrollCallback(window, (window, xoffset, yoffset) => {
                 camera.zoom(yoffset.toFloat)
